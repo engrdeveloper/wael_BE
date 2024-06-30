@@ -1,9 +1,12 @@
 require("dotenv").config();
 
 module.exports = {
-  mongoDB: {
+  mySql: {
     hostname: process.env.HOSTNAME,
-    db: process.env.DB,
+    username: process.env.USERNAME,
+    dB: process.env.DB,
+    port: process.env.PORT,
+    password: process.env.PASSWORD,
   },
   port: process.env.PORT || 4000
 };

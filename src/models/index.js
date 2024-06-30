@@ -1,19 +1,24 @@
-const mongoose = require('mongoose');
-const {mongoDB} = require('../config');
+const {Sequelize, DataTypes} = require('sequelize');
+const {mySql} = require('../config/index')
 
-mongoose.connect(
-            `mongodb://${mongoDB.hostname}:27017/${mongoDB.db}`,
-    {
-        useNewUrlParser: true,
-    }).then(res => {
-    console.log('mongodb connected')
-})
-    .catch(error => {
-        console.log('Cannot Connect To Mongo Database!', error);
-    });
+const sequelize = new Sequelize('buffer', 'root', 'root', {
+    dialect: 'mysql',
+    host: 'localhost',
+    port: 3306
+});
 
-const Users = require('./Users');
+const db = {};
 
-module.exports = {
-    Users
-}
+db.User = require('./Users')(sequelize, DataTypes);
+db.UserChannels = require('./UserChannels')(sequelize, DataTypes);
+
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
+
+// db.sequelize.sync({force: true}).then(() => {
+//
+//     console.log("syncing done");
+//
+// });
+
+module.exports = db;
