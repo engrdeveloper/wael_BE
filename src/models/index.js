@@ -1,9 +1,9 @@
 const {Sequelize, DataTypes} = require('sequelize');
 const {mySql} = require('../config/index')
 
-const sequelize = new Sequelize('buffer', 'root', 'root', {
+const sequelize = new Sequelize(mySql.db, mySql.username, mySql.password, {
     dialect: 'mysql',
-    host: 'localhost',
+    host: mySql.hostname,
     port: 3306
 });
 

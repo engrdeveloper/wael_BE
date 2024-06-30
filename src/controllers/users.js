@@ -143,7 +143,6 @@ exports.login = async (req, res) => {
     }
 };
 
-
 exports.getUsersByEmailPrefix = async (req, res) => {
     try {
 
@@ -166,5 +165,55 @@ exports.getUsersByEmailPrefix = async (req, res) => {
             success: false,
             error: {message: 'Something went wrong', reason: error.message}
         })
+    }
+};
+
+exports.forgetPass = async (req, res) => {
+
+    try {
+
+        const {email} = req.body;
+
+        if (!email) {
+            return res.status(500).json({success: false, error: {message: 'Email are required'}});
+        }
+
+        const user = await userService.forgetPass(email);
+
+        console.log(user)
+
+        if (!user) {
+            return res.status(500).json({success: false, error: {message: 'Invalid Email'}});
+        }
+
+        res.status(200).json({success: true, message: 'Email sent'});
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: {message: 'Something went wrong', reason: error.message}
+        })
+    }
+};
+
+exports.updatePass = async (req, res) => {
+    try {
+
+        const { password} = req.body;
+
+        if (!password) {
+            return res.status(500).json({success: false, error: {message: 'Provide data to update'}});
+        }
+        let updatedUser=await userService.updateUser(req?.user?.userId, { password});;
+
+        if (!updatedUser) {
+            return res.status(200).json({success: false, message: 'User Not Found'});
+        }
+
+        res.status(200).json({success: true, data: {updatedUser}});
+
+    }
+    catch (error) {
+        res.status(500).json({success: false, error: {message: 'Something went wrong', reason: error.message}})
     }
 };

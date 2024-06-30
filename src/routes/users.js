@@ -15,4 +15,9 @@ router.post('/login', userController.login);
 
 router.get('/email/:emailPrefix', auth, userController.getUsersByEmailPrefix);
 
+router.post('/forget', userController.forgetPass)
+
+router.post('/updatePass',auth, userController.updatePass)
+
+
 module.exports = router;
