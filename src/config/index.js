@@ -10,9 +10,9 @@ module.exports = {
     password: process.env.PASSWORD,
   },
   port: process.env.PORT || 4000,
-  emailService:{
+  emailService: {
     user: process.env.emailUser,
-    pass:process.env.emailPass,
-    from:process.env.fromEmail
-  }
+    pass: process.env.emailPass,
+    from: process.env.fromEmail,
+  },
 };

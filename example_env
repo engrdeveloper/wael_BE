@@ -1,0 +1,11 @@
+server_url=127.0.0.1
+
+HOSTNAME=localhost
+DBUSERNAME=root
+DB=buffer 
+DBPORT=3306
+PASSWORD=password
+
+emailUser=
+emailPass=
+fromEmail=
