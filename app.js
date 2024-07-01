@@ -46,7 +46,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //
-require("./src/middlewares/facebook-setup");
+require("./src/middlewares/passport-setup.js");
 
 // Mount the Social authentication route at the "/apis/auth" path
 app.use("/apis/auth", SocialAuthRouter);

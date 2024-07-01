@@ -21,4 +21,6 @@ module.exports = {
   facebookAppSecret: process.env.FACEBOOK_APP_SECRET,
   linkedinAppId: process.env.LINKEDIN_APP_ID,
   linkedinAppSecret: process.env.LINKEDIN_APP_SECRET,
+  twitterKey: process.env.TWITTER_KEY,
+  twitterSecret: process.env.TWITTER_SECRET,
 };

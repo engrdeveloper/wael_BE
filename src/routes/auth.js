@@ -7,14 +7,30 @@ const axios = require("axios");
 // Initiate the Facebook authentication process
 router.get("/facebook", passport.authenticate("facebook"));
 
+const appUrlRdirect = appURL + "/publish";
+
 // Handle the callback from Facebook
 // If authentication is successful, redirect to the main page
 // If authentication fails, redirect to the login page
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
-    successRedirect: appURL,
-    failureRedirect: appURL,
+    successRedirect: appUrlRdirect,
+    failureRedirect: appUrlRdirect,
+  })
+);
+
+// Initiate the twitter authentication process
+router.get("/twitter", passport.authenticate("twitter"));
+
+// Handle the callback from Facebook
+// If authentication is successful, redirect to the main page
+// If authentication fails, redirect to the login page
+router.get(
+  "/twitter/callback",
+  passport.authenticate("twitter", {
+    successRedirect: appUrlRdirect,
+    failureRedirect: appUrlRdirect,
   })
 );
 
@@ -101,13 +117,11 @@ router.get("/linkedin/callback", async (req, res) => {
     // TODO: Handle the user data here based on channel logic
 
     // Redirect the user to the main page
-    res.redirect(appURL);
+    res.redirect(appUrlRdirect);
   } catch (error) {
     // Log the error and send an error response
     console.log(322222, error);
-    res
-      .status(500)
-      .send({ message: "something went wrong", error: JSON.stringify(error) });
+    res.redirect(appUrlRdirect);
   }
 });
 
