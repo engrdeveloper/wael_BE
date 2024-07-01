@@ -16,9 +16,10 @@ async function sendPasswordResetEmail(user, token) {
     service: "gmail",
     auth: {
       user: emailService.user,
-      pass: emailService.password,
+      pass: emailService.pass,
     },
   });
+
   const resetLink = `${hostname}/password-reset/${user.id}/${token}`;
 
   const mailOptions = {
