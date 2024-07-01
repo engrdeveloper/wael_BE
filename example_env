@@ -1,5 +1,6 @@
-server_url=127.0.0.1
-
+server_url=http://localhost:3000
+APP_URL=http://localhost:3000
+REACT_APP_API_URL= http://localhost:4000
 HOSTNAME=localhost
 DBUSERNAME=root
 DB=buffer 
@@ -9,3 +10,6 @@ PASSWORD=password
 emailUser=
 emailPass=
 fromEmail=
+
+FACEBOOK_APP_ID=1102909337476037
+FACEBOOK_APP_SECRET=2dfffd13ea8a3c0558a2935d264ee87a
