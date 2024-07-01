@@ -225,6 +225,62 @@ exports.login = async (req, res) => {
 };
 
 /**
+ * Authenticates a user using Google Sign-In and returns a JSON Web Token (JWT).
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ */
+exports.loginWithGoogle = async (req, res) => {
+  try {
+    // Retrieve the Google Sign-In token from the request body
+    const { credential: token } = req.body;
+
+    // If the token is missing, return an error response
+    if (!token) {
+      res.status(400).json({ message: "Missing access token." });
+      return;
+    }
+
+    // Decode the Google Sign-In token
+    const googleUser = Jwt.decode(token);
+
+    // Extract the email from the decoded token
+    const { email } = googleUser;
+
+    // Retrieve the user from the database by their email
+    let user = await userService.getUserByEmail(email);
+
+    // If the user does not exist, create a new user
+    if (!user) {
+      await userService.addUser({ email, password: "google" });
+
+      user = await userService.getUserByEmail(email);
+    }
+
+    // Generate a JSON Web Token (JWT) with the user's ID and email
+    const jwtToken = Jwt.sign(
+      { userId: user.id, email: user.email },
+      "NODEAPI@123"
+    );
+
+    // Return a success response with the token, a message, and the user object
+    res.status(200).json({
+      success: true,
+      message: "User verified Successfully",
+      token: jwtToken,
+      user,
+    });
+  } catch (error) {
+    // If an error occurs, return an error response with details
+    res.status(500).json({
+      success: false,
+      error: { message: "Something went wrong", reason: error.message },
+    });
+  }
+};
+
+/**
  * Retrieves users from the database whose email starts with a given prefix.
  *
  * @param {Object} req - The request object.
