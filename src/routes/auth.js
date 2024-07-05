@@ -4,6 +4,7 @@ const passport = require("passport");
 const crypto = require("crypto");
 const { appURL, apiUrl } = require("../config");
 const axios = require("axios");
+const { handleUserFacebookLoginSuccess } = require("../controllers/facebook");
 // Initiate the Facebook authentication process
 router.get("/facebook", passport.authenticate("facebook"));
 
@@ -15,9 +16,13 @@ const appUrlRdirect = appURL + "/publish";
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
-    successRedirect: appUrlRdirect,
     failureRedirect: appUrlRdirect,
-  })
+  }),
+  async (req, res) => {
+    await handleUserFacebookLoginSuccess(req.user);
+    // res.send({ pagesData });
+    res.redirect(appUrlRdirect);
+  }
 );
 
 // Initiate the twitter authentication process

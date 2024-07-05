@@ -54,6 +54,8 @@ app.use("/apis/auth", SocialAuthRouter);
 // Mount the user route at the "/apis/user" path
 app.use("/apis/user", UserRouter);
 
+// Routes for handling facebook posting
+app.use("/apis/facebook", require("./src/routes/facebook"));
 // Start the server and listen on the specified port
 app.listen(port, (err) => {
   // Log an error if there was an error in server setup

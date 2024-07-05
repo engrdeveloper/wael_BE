@@ -10,6 +10,18 @@ const {
 const FacebookStrategy = require("passport-facebook").Strategy;
 const TwitterStrategy = require("passport-twitter").Strategy;
 
+// Facebook permissions required for posting to a page:
+// https://developers.facebook.com/docs/pages-api/posts/
+// - pages_manage_engagement
+// - pages_manage_posts
+// - pages_read_engagement
+// - pages_read_user_engagement
+// - publish_video (if you're publishing a video to the Page)
+
+// pages_manage_engagement depends on:https://developers.facebook.com/docs/permissions/#permission-dependencies
+// - pages_read_user_content
+// - pages_show_list
+
 // Configure Passport.js to use the Facebook strategy
 passport.use(
   new FacebookStrategy(
@@ -31,6 +43,7 @@ passport.use(
         "pages_read_engagement",
         "pages_manage_engagement",
         "pages_read_user_content",
+        "publish_video",
       ],
     },
     // This function is called after Facebook authentication is successful
