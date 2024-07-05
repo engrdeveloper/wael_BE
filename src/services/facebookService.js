@@ -84,7 +84,7 @@ const singleImagePostToFbPageFeed = async ({
  * @throws {Error} - Throw the same error that occurred.
  */
 const handleError = (error) => {
-  console.log("Error while posting to facebook", error.response.data);
+  console.log("Error while posting to facebook", error?.response?.data);
   throw new Error(error);
 };
 
@@ -195,9 +195,131 @@ const videoPostToFbPageFeed = async ({
   }
 };
 
+/**
+ * Initilize Upload Session
+ *
+ * Initializes an upload session for a video reel on a Facebook page. (https://developers.facebook.com/docs/video-api/guides/reels-publishing#step-1--initialize-an-upload-session)
+ * @param {string} pageId - The ID of the Facebook page.
+ * @param {string} pageAccessToken - The access token for the page.
+ * @returns {Object} - An object to the response data from the Facebook API.
+ * @throws {Error} - If there is an error initializing the upload session.
+ */
+const initializeUploadSession = async (pageId, pageAccessToken) => {
+  try {
+    // Make a POST request to initialize the upload session
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${pageId}/video_reels`,
+      {
+        upload_phase: "start",
+        access_token: pageAccessToken,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    // Handle any errors that occur while initializing the upload session.
+    console.error("Error initializing upload session:", error.response.data);
+    throw error;
+  }
+};
+
+/**
+ * Upload Video From URL
+ *
+ * Method to Uploads a reel video from a URL to a Facebook page.(https://developers.facebook.com/docs/video-api/guides/reels-publishing#upload)
+ * @param {string} uploadUrl - The URL for the upload session.
+ * @param {string} videoUrl - The URL of the video to be uploaded.
+ * @param {string} pageAccessToken - The access token for the page.
+ * @returns {Object} - The response data from the Facebook API.
+ * @throws {Error} - If there is an error while uploading the video.
+ */
+const uploadVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
+  try {
+    // Set up the request configuration
+    let config = {
+      method: "post",
+      url: uploadUrl,
+      headers: {
+        // Set the Authorization header with the page access token
+        Authorization: `OAuth ${pageAccessToken}`,
+        // Set the file_url header with the URL of the video to be uploaded
+        file_url: videoUrl,
+      },
+    };
+
+    // Make the request to upload the video
+    const response = await axios.request(config);
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    // Handle any errors that occur while uploading the video.
+    console.error("Error uploading video from URL:", error.response.data);
+    throw error;
+  }
+};
+
+/**
+ * Reel Post To Fb Page Feed
+ *
+ * Method to Post a video reel to a Facebook page feed.(https://developers.facebook.com/docs/video-api/guides/reels-publishing#step-3--publish-the-reel)
+ * @param {string} accessToken - The access token for the page.
+ * @param {string} pageId - The ID of the Facebook page.
+ * @param {string} videoUrl - The URL of the video to be posted.
+ * @param {string} [description=""] - The description of the video reel.
+ * @returns {Object} - The response data from the Facebook API.
+ * @throws {Error} - If there is an error while posting the video reel.
+ */
+const reelPostToFbPageFeed = async ({
+  accessToken,
+  pageId,
+  videoUrl,
+  description = "",
+}) => {
+  try {
+    // Initialize the upload session
+    const uploadSession = await initializeUploadSession(pageId, accessToken);
+
+    const uploadUrl = uploadSession.upload_url;
+    const videoId = uploadSession.video_id;
+
+    // Upload the video
+    await uploadVideoFromURL(uploadUrl, videoUrl, accessToken);
+
+    // Make a POST request to post the video to the Facebook Graph API
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${pageId}/video_reels`,
+      {
+        access_token: accessToken,
+        video_id: videoId,
+        upload_phase: "FINISH",
+        video_state: "PUBLISHED",
+        description: description,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    // Handle any errors that occur while posting to Facebook.
+    handleError(error);
+  }
+};
+
 module.exports = {
   textPostToFbPageFeed,
   singleImagePostToFbPageFeed,
   multipleImagePostToFbPageFeed,
   videoPostToFbPageFeed,
+  reelPostToFbPageFeed,
 };
