@@ -319,10 +319,136 @@ const reelPostToFbPageFeed = async ({
   }
 };
 
+/**
+ * Initialize Story Upload Session
+ *
+ * Initializes an upload session for a video story on a Facebook page. (https://developers.facebook.com/docs/page-stories-api/#initialize)
+ *
+ * @param {string} pageId - The ID of the Facebook page.
+ * @param {string} pageAccessToken - The access token for the page.
+ * @returns {Promise<Object>} - The response data from the Facebook API.
+ * @throws {Error} - If there is an error initializing the upload session.
+ */
+const initializeStoryUploadSession = async (pageId, pageAccessToken) => {
+  try {
+    // Make a POST request to initialize the story upload session
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${pageId}/video_stories`,
+      {
+        upload_phase: "start",
+        access_token: pageAccessToken,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    // Handle any errors that occur while initializing the upload session.
+    console.error("Error initializing upload session:", error.response.data);
+    throw error;
+  }
+};
+
+/**
+ * Upload Story Video From URL
+ *
+ * Uploads a video from a URL to a Facebook page's story.(https://developers.facebook.com/docs/page-stories-api/#step-2--upload-a-video)
+ * @param {string} uploadUrl - The URL for the upload session.
+ * @param {string} videoUrl - The URL of the video to be uploaded.
+ * @param {string} pageAccessToken - The access token for the page.
+ * @returns {Promise<Object>} - The response data from the Facebook API.
+ * @throws {Error} - If there is an error while uploading the video.
+ */
+const uploadStoryVideoFromURL = async (
+  uploadUrl,
+  videoUrl,
+  pageAccessToken
+) => {
+  try {
+    // Set up the request configuration
+    let config = {
+      method: "post",
+      url: uploadUrl,
+      headers: {
+        // Set the Authorization header with the page access token
+        Authorization: `OAuth ${pageAccessToken}`,
+        // Set the file_url header with the URL of the video to be uploaded
+        file_url: videoUrl,
+      },
+    };
+
+    // Make the request to upload the video
+    const response = await axios.request(config);
+
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    // Handle any errors that occur while uploading the video.
+    console.error("Error uploading video from URL:", error.response.data);
+    throw error;
+  }
+};
+
+/**
+ * Story Video To Fb Page Feed
+ *
+ * Post a video story to a Facebook page feed.(https://developers.facebook.com/docs/page-stories-api/#step-3--publish-a-video-story)
+ * @param {string} accessToken - The access token for the page.
+ * @param {string} pageId - The ID of the Facebook page.
+ * @param {string} videoUrl - The URL of the video to be posted.
+ * @returns {Promise<Object>} - The response data from the Facebook API.
+ * @throws {Error} - If there is an error while posting the video story.
+ */
+const storyVideoToFbPageFeed = async ({ accessToken, pageId, videoUrl }) => {
+  try {
+    // Initialize the upload session
+    const uploadSession = await initializeStoryUploadSession(
+      pageId,
+      accessToken
+    );
+
+    const uploadUrl = uploadSession.upload_url;
+    const videoId = uploadSession.video_id;
+    console.log({ uploadStoryVideoFromURL, videoId });
+
+    // Upload the story video
+    await uploadStoryVideoFromURL(uploadUrl, videoUrl, accessToken);
+
+    // Make a POST request to post the video story to the Facebook Graph API
+    const response = await axios.post(
+      `https://graph.facebook.com/v20.0/${pageId}/video_stories`,
+      {
+        access_token: accessToken,
+        video_id: videoId,
+        upload_phase: "FINISH",
+        video_state: "PUBLISHED",
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    console.log(22222, error);
+    // Handle any errors that occur while posting to Facebook.
+    handleError(error);
+  }
+};
+
 module.exports = {
   textPostToFbPageFeed,
   singleImagePostToFbPageFeed,
   multipleImagePostToFbPageFeed,
   videoPostToFbPageFeed,
   reelPostToFbPageFeed,
+  storyVideoToFbPageFeed,
 };

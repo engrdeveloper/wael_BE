@@ -5,6 +5,7 @@ const {
   multipleImagePostToFbPageFeed,
   videoPostToFbPageFeed,
   reelPostToFbPageFeed,
+  storyVideoToFbPageFeed,
 } = require("../services/facebookService");
 
 /**
@@ -207,13 +208,47 @@ exports.reelPostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    // Post the video to the Facebook page's feed
+    // Post the reels video to the Facebook page's feed
     // The description is an optional field for the video
     const facebookResponse = await reelPostToFbPageFeed({
       accessToken,
       pageId,
       videoUrl,
       description: postText,
+    });
+
+    // Return the response data from the Facebook API
+    res.status(200).json(facebookResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Handles the request to post a story video to a Facebook page's feed.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Return the response from the Facebook API
+ */
+exports.storyVideoToPageFeed = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    const { accessToken, pageId, videoUrl } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !pageId || !videoUrl) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Post the stroy video to the Facebook page's feed
+    // The Facebook API expects the video to be uploaded first,
+    // and then we can use the video ID to post the video to the page's feed.
+    const facebookResponse = await storyVideoToFbPageFeed({
+      accessToken,
+      pageId,
+      videoUrl,
     });
 
     // Return the response data from the Facebook API

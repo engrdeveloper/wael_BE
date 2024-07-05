@@ -23,4 +23,7 @@ router.post("/page/post-video", facebookController.videoPostToPageFeed);
 // POST /page/post-reel - send reel post at the page
 router.post("/page/post-reel", facebookController.reelPostToPageFeed);
 
+// POST /page/post-story - send story post at the page
+router.post("/page/post-story-video", facebookController.storyVideoToPageFeed);
+
 module.exports = router;
