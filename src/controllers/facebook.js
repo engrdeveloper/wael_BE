@@ -6,6 +6,7 @@ const {
   videoPostToFbPageFeed,
   reelPostToFbPageFeed,
   storyVideoToFbPageFeed,
+  storyImageToFbPageFeed,
 } = require("../services/facebookService");
 
 /**
@@ -249,6 +250,41 @@ exports.storyVideoToPageFeed = async (req, res) => {
       accessToken,
       pageId,
       videoUrl,
+    });
+
+    // Return the response data from the Facebook API
+    res.status(200).json(facebookResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Handles the request to post a story image to a Facebook page's feed.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Return the response from the Facebook API
+ */
+exports.storyImageToPageFeed = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    const { accessToken, pageId, imageUrl, caption } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !pageId || !imageUrl) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Post the story image to the Facebook page's feed
+    // The Facebook API expects the image to be uploaded first,
+    // and then we can use the image ID to post the image to the page's feed.
+    const facebookResponse = await storyImageToFbPageFeed({
+      accessToken,
+      pageId,
+      imageUrl,
+      caption,
     });
 
     // Return the response data from the Facebook API

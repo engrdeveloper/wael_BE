@@ -54,18 +54,12 @@ const singleImagePostToFbPageFeed = async ({
 }) => {
   try {
     // Make a POST request to the Facebook Graph API to post a single image to the page's feed.
-    const response = await axios.post(
-      `https://graph.facebook.com/${pageId}/photos`,
-      {
-        url: imageUrl,
-        caption,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
+    const response = await uploadImageToFacebook(
+      accessToken,
+      pageId,
+      imageUrl,
+      caption,
+      true
     );
 
     // Return the response data from the Facebook API.
@@ -84,8 +78,44 @@ const singleImagePostToFbPageFeed = async ({
  * @throws {Error} - Throw the same error that occurred.
  */
 const handleError = (error) => {
-  console.log("Error while posting to facebook", error?.response?.data);
+  console.log("Error while posting to facebook", error);
   throw new Error(error);
+};
+
+/**
+ * Upload Image to Facebook
+ *
+ * Uploads an image to a Facebook page's feed.(https://developers.facebook.com/docs/graph-api/reference/page/photos#upload)
+ * @param {string} accessToken - The access token for the user's Facebook Page.
+ * @param {string} pageId - The ID of the page to which the image will be posted.
+ * @param {string} imageUrl - The URL of the image to be posted.
+ * @param {string} [caption] - The optional caption for the image.
+ * @param {boolean} [published=false] - The optional published status of the image.
+ * @returns {Promise<Object>} - A promise that resolves to the response data from the Facebook API.
+ * @throws {Error} - If there is an error while uploading the image.
+ */
+const uploadImageToFacebook = async (
+  accessToken,
+  pageId,
+  imageUrl,
+  caption = "",
+  published = false
+) => {
+  // Make a POST request to the Facebook Graph API to upload an image to the page's feed.
+  return axios.post(
+    `https://graph.facebook.com/${pageId}/photos`,
+    {
+      url: imageUrl,
+      caption,
+      published,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
 };
 
 /**
@@ -110,18 +140,10 @@ const multipleImagePostToFbPageFeed = async ({
     const imageIds = await Promise.all(
       imageUrls.map(async (imageUrl) => {
         // Make a POST request to get the image ID
-        const response = await axios.post(
-          `https://graph.facebook.com/${pageId}/photos`,
-          {
-            url: imageUrl,
-            published: false, // Get the image ID without publishing
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+        const response = await uploadImageToFacebook(
+          accessToken,
+          pageId,
+          imageUrl
         );
         return response.data.id; // Return the image ID
       })
@@ -148,7 +170,6 @@ const multipleImagePostToFbPageFeed = async ({
     // Return the response data from the Facebook API.
     return response.data;
   } catch (error) {
-    console.log(222222, error);
     // Handle any errors that occur while posting to Facebook.
     handleError(error);
   }
@@ -444,6 +465,55 @@ const storyVideoToFbPageFeed = async ({ accessToken, pageId, videoUrl }) => {
   }
 };
 
+/**
+ * Posts a single image story to a Facebook page's feed.
+ *
+ * @param {string} accessToken - The access token for the user's Facebook Page.
+ * @param {string} pageId - The ID of the page to which the story will be posted.
+ * @param {string} imageUrl - The URL of the image to be posted.
+ * @param {string} [caption=""] - The optional caption for the image.
+ * @returns {Promise<Object>} - A promise that resolves to the response data from the Facebook API.
+ * @throws {Error} - If there is an error while posting to Facebook.
+ */
+const storyImageToFbPageFeed = async ({
+  accessToken,
+  pageId,
+  imageUrl,
+  caption = "",
+}) => {
+  try {
+    // Make a POST request to the Facebook Graph API to post a single image to the page's feed.
+    // The image is uploaded first, and then posted to the page's feed using the image ID.
+    const response = await uploadImageToFacebook(
+      accessToken,
+      pageId,
+      imageUrl,
+      caption,
+      false
+    );
+    const imageId = response.data.id;
+
+    // Send image to story
+    await axios.post(
+      `https://graph.facebook.com/v20.0/${pageId}/photo_stories`,
+      {
+        access_token: accessToken,
+        photo_id: imageId,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    // Return the response data from the Facebook API.
+    return response.data;
+  } catch (error) {
+    // Handle any errors that occur while posting to Facebook.
+    handleError(error);
+  }
+};
+
 module.exports = {
   textPostToFbPageFeed,
   singleImagePostToFbPageFeed,
@@ -451,4 +521,5 @@ module.exports = {
   videoPostToFbPageFeed,
   reelPostToFbPageFeed,
   storyVideoToFbPageFeed,
+  storyImageToFbPageFeed,
 };
