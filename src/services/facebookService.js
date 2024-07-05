@@ -196,7 +196,7 @@ const videoPostToFbPageFeed = async ({
 };
 
 /**
- * Initilize Upload Session
+ * Initilize Reel Upload Session
  *
  * Initializes an upload session for a video reel on a Facebook page. (https://developers.facebook.com/docs/video-api/guides/reels-publishing#step-1--initialize-an-upload-session)
  * @param {string} pageId - The ID of the Facebook page.
@@ -204,7 +204,7 @@ const videoPostToFbPageFeed = async ({
  * @returns {Object} - An object to the response data from the Facebook API.
  * @throws {Error} - If there is an error initializing the upload session.
  */
-const initializeUploadSession = async (pageId, pageAccessToken) => {
+const initializeReelUploadSession = async (pageId, pageAccessToken) => {
   try {
     // Make a POST request to initialize the upload session
     const response = await axios.post(
@@ -230,7 +230,7 @@ const initializeUploadSession = async (pageId, pageAccessToken) => {
 };
 
 /**
- * Upload Video From URL
+ * Upload Reel Video From URL
  *
  * Method to Uploads a reel video from a URL to a Facebook page.(https://developers.facebook.com/docs/video-api/guides/reels-publishing#upload)
  * @param {string} uploadUrl - The URL for the upload session.
@@ -239,7 +239,7 @@ const initializeUploadSession = async (pageId, pageAccessToken) => {
  * @returns {Object} - The response data from the Facebook API.
  * @throws {Error} - If there is an error while uploading the video.
  */
-const uploadVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
+const uploadReelVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
   try {
     // Set up the request configuration
     let config = {
@@ -283,13 +283,16 @@ const reelPostToFbPageFeed = async ({
 }) => {
   try {
     // Initialize the upload session
-    const uploadSession = await initializeUploadSession(pageId, accessToken);
+    const uploadSession = await initializeReelUploadSession(
+      pageId,
+      accessToken
+    );
 
     const uploadUrl = uploadSession.upload_url;
     const videoId = uploadSession.video_id;
 
     // Upload the video
-    await uploadVideoFromURL(uploadUrl, videoUrl, accessToken);
+    await uploadReelVideoFromURL(uploadUrl, videoUrl, accessToken);
 
     // Make a POST request to post the video to the Facebook Graph API
     const response = await axios.post(
