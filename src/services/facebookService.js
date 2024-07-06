@@ -168,7 +168,7 @@ const multipleImagePostToFbPageFeed = async ({
     );
 
     // Return the response data from the Facebook API.
-    return response.data;
+    return response?.data;
   } catch (error) {
     // Handle any errors that occur while posting to Facebook.
     handleError(error);
@@ -209,7 +209,7 @@ const videoPostToFbPageFeed = async ({
     const response = await axios.request(config);
 
     // Return the response data from the Facebook API.
-    return response.data;
+    return response?.data;
   } catch (error) {
     // Handle any errors that occur while posting to Facebook.
     handleError(error);
@@ -242,10 +242,10 @@ const initializeReelUploadSession = async (pageId, pageAccessToken) => {
     );
 
     // Return the response data from the Facebook API.
-    return response.data;
+    return response?.data;
   } catch (error) {
     // Handle any errors that occur while initializing the upload session.
-    console.error("Error initializing upload session:", error.response.data);
+    console.error("Error initializing upload session:", error?.response?.data);
     throw error;
   }
 };
@@ -277,10 +277,10 @@ const uploadReelVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
     // Make the request to upload the video
     const response = await axios.request(config);
     // Return the response data from the Facebook API.
-    return response.data;
+    return response?.data;
   } catch (error) {
     // Handle any errors that occur while uploading the video.
-    console.error("Error uploading video from URL:", error.response.data);
+    console.error("Error uploading video from URL:", error?.response?.data);
     throw error;
   }
 };
@@ -313,6 +313,8 @@ const reelPostToFbPageFeed = async ({
     const videoId = uploadSession.video_id;
 
     // Upload the video
+    // Sample Video Link:https://videos.pexels.com/video-files/4812205/4812205-sd_360_640_30fps.mp4
+    // Video specification should be like this: https://developers.facebook.com/docs/video-api/guides/reels-publishing/#requirements
     await uploadReelVideoFromURL(uploadUrl, videoUrl, accessToken);
 
     // Make a POST request to post the video to the Facebook Graph API
@@ -333,7 +335,7 @@ const reelPostToFbPageFeed = async ({
     );
 
     // Return the response data from the Facebook API.
-    return response.data;
+    return response?.data;
   } catch (error) {
     // Handle any errors that occur while posting to Facebook.
     handleError(error);
@@ -370,7 +372,7 @@ const initializeStoryUploadSession = async (pageId, pageAccessToken) => {
     return response.data;
   } catch (error) {
     // Handle any errors that occur while initializing the upload session.
-    console.error("Error initializing upload session:", error.response.data);
+    console.error("Error initializing upload session:", error?.response?.data);
     throw error;
   }
 };
@@ -410,7 +412,7 @@ const uploadStoryVideoFromURL = async (
     return response.data;
   } catch (error) {
     // Handle any errors that occur while uploading the video.
-    console.error("Error uploading video from URL:", error.response.data);
+    console.error("Error uploading video from URL:", error?.response?.data);
     throw error;
   }
 };
