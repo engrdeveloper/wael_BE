@@ -86,6 +86,7 @@ const handleError = (error) => {
  * Upload Image to Facebook
  *
  * Uploads an image to a Facebook page's feed.(https://developers.facebook.com/docs/graph-api/reference/page/photos#upload)
+ * Photo Sepcification (Upto 4MB) https://developers.facebook.com/docs/graph-api/reference/page/photos#photo-specifications
  * @param {string} accessToken - The access token for the user's Facebook Page.
  * @param {string} pageId - The ID of the page to which the image will be posted.
  * @param {string} imageUrl - The URL of the image to be posted.
@@ -381,6 +382,7 @@ const initializeStoryUploadSession = async (pageId, pageAccessToken) => {
  * Upload Story Video From URL
  *
  * Uploads a video from a URL to a Facebook page's story.(https://developers.facebook.com/docs/page-stories-api/#step-2--upload-a-video)
+ * Vide Specification- (https://developers.facebook.com/docs/page-stories-api/#media-requirements)
  * @param {string} uploadUrl - The URL for the upload session.
  * @param {string} videoUrl - The URL of the video to be uploaded.
  * @param {string} pageAccessToken - The access token for the page.
@@ -421,6 +423,7 @@ const uploadStoryVideoFromURL = async (
  * Story Video To Fb Page Feed
  *
  * Post a video story to a Facebook page feed.(https://developers.facebook.com/docs/page-stories-api/#step-3--publish-a-video-story)
+ * Vide Specification- (https://developers.facebook.com/docs/page-stories-api/#media-requirements)
  * @param {string} accessToken - The access token for the page.
  * @param {string} pageId - The ID of the Facebook page.
  * @param {string} videoUrl - The URL of the video to be posted.
