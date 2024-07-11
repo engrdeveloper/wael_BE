@@ -229,6 +229,7 @@ const uploadVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
  * @throws {Error} - If there is an error while posting the video.
  */
 exports.postVideoToInstagramAccount = async ({
+  media_type = "REELS",
   igUserId,
   accessToken,
   videoUrl,
@@ -239,7 +240,7 @@ exports.postVideoToInstagramAccount = async ({
     const data = await initializeUploadVideoToIg(
       igUserId,
       accessToken,
-      "REELS",
+      media_type,
       caption,
       false
     );

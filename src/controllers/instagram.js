@@ -84,13 +84,17 @@ exports.postCarouselToInstagram = async (req, res) => {
   }
 };
 
+/**
+ * Handles the request to post a video to an Instagram account.
+ *
+ * https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/#reels-specs
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Returns the response data from the Instagram API.
+ */
 exports.postVideoToInstagram = async (req, res) => {
   try {
     // Extract the required parameters from the request body
-    // accessToken: The access token for the user's Instagram account.
-    // videoUrl: The URL of the video to be posted.
-    // igUserId: The ID of the Instagram user.
-    // caption: The optional caption for the image (default: "").
     const { accessToken, videoUrl, igUserId, caption = "" } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -100,10 +104,45 @@ exports.postVideoToInstagram = async (req, res) => {
 
     // Post the video to the Instagram account
     const instagramResponse = await postVideoToInstagramAccount({
+      media_type: "REELS",
       igUserId,
       accessToken,
       videoUrl,
       caption,
+    });
+
+    // Return the response data from the Instagram API
+    res.status(200).json(instagramResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Handles the request to post a video to Instagram's stories.
+ *
+ * https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/#story-video-specifications
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Returns the response data from the Instagram API.
+ */
+exports.postStoryVideoToInstagram = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    const { accessToken, videoUrl, igUserId } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !videoUrl || !igUserId) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Post the video to Instagram's stories
+    const instagramResponse = await postVideoToInstagramAccount({
+      media_type: "STORIES",
+      igUserId,
+      accessToken,
+      videoUrl,
     });
 
     // Return the response data from the Instagram API
