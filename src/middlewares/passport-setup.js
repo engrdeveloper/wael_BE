@@ -1,12 +1,6 @@
 // Set up Passport.js for Facebook authentication
 const passport = require("passport");
-const {
-  facebookAppId,
-  facebookAppSecret,
-  apiUrl,
-  twitterKey,
-  twitterSecret,
-} = require("../config");
+const { facebookAppId, facebookAppSecret, apiUrl } = require("../config");
 const FacebookStrategy = require("passport-facebook").Strategy;
 const TwitterStrategy = require("passport-twitter").Strategy;
 
@@ -56,21 +50,6 @@ passport.use(
   )
 );
 
-// Configure Passport.js to use the Twitter strategy
-passport.use(
-  new TwitterStrategy(
-    {
-      consumerKey: twitterKey,
-      consumerSecret: twitterSecret,
-      callbackURL: `${apiUrl}/apis/auth/twitter/callback`,
-    },
-    function (token, tokenSecret, profile, done) {
-      console.log(profile, 444444444444);
-      // In a real application, you might save the profile info to a database
-      return done(null, profile);
-    }
-  )
-);
 // Serialize the user object into a session
 passport.serializeUser((user, done) => {
   done(null, user);
