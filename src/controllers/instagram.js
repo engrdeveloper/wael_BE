@@ -1,0 +1,115 @@
+const {
+  postImageToInstagramAccount,
+  postCarouselToInstagramAccount,
+  postVideoToInstagramAccount,
+} = require("../services/instagramService");
+
+/**
+ * Handles the request to post an image to an Instagram account.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Returns the response data from the Instagram API.
+ */
+exports.postImageToInstagram = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    // accessToken: The access token for the user's Instagram account.
+    // imageUrl: The URL of the image to be posted.
+    // igUserId: The ID of the Instagram user.
+    // caption: The optional caption for the image (default: "").
+    const { accessToken, imageUrl, igUserId, caption = "" } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !imageUrl || !igUserId) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Post the image to the Instagram account
+    const instagramResponse = await postImageToInstagramAccount({
+      igUserId,
+      accessToken,
+      imageUrl,
+      caption,
+    });
+
+    // Return the response data from the Instagram API
+    res.status(200).json(instagramResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
+ * Handles the request to post a carousel of images to an Instagram account.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Returns the response data from the Instagram API.
+ */
+exports.postCarouselToInstagram = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    // accessToken: The access token for the user's Instagram account.
+    // igUserId: The ID of the Instagram user.
+    // imageUrls: An array of URLs of the images to be posted.
+    // caption: The optional caption for the carousel (default: "").
+    const { accessToken, igUserId, imageUrls, caption = "" } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !igUserId || !imageUrls || imageUrls.length === 0) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // If the number of images is greater than 10, return an error response
+    if (imageUrls.length > 10) {
+      return res.status(400).json({ error: "Maximum 10 images allowed" });
+    }
+
+    // Post the carousel of images to the Instagram account
+    const instagramResponse = await postCarouselToInstagramAccount({
+      igUserId,
+      accessToken,
+      mediaItems: imageUrls,
+      caption,
+    });
+
+    // Return the response data from the Instagram API
+    res.status(200).json(instagramResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    console.error("Error posting carousel to Instagram:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.postVideoToInstagram = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    // accessToken: The access token for the user's Instagram account.
+    // videoUrl: The URL of the video to be posted.
+    // igUserId: The ID of the Instagram user.
+    // caption: The optional caption for the image (default: "").
+    const { accessToken, videoUrl, igUserId, caption = "" } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !videoUrl || !igUserId) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Post the video to the Instagram account
+    const instagramResponse = await postVideoToInstagramAccount({
+      igUserId,
+      accessToken,
+      videoUrl,
+      caption,
+    });
+
+    // Return the response data from the Instagram API
+    res.status(200).json(instagramResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    res.status(500).json({ error: error.message });
+  }
+};
