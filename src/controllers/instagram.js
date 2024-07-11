@@ -120,6 +120,42 @@ exports.postVideoToInstagram = async (req, res) => {
 };
 
 /**
+ * Handles the request to post an image to Instagram's stories.
+ *
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Object} - Returns the response data from the Instagram API.
+ */
+exports.postStoryImageToInstagram = async (req, res) => {
+  try {
+    // Extract the required parameters from the request body
+    // accessToken: The access token for the user's Instagram account.
+    // imageUrl: The URL of the image to be posted.
+    // igUserId: The ID of the Instagram user.
+    const { accessToken, imageUrl, igUserId } = req.body;
+
+    // If any of the required parameters are missing, return a bad request response
+    if (!accessToken || !imageUrl || !igUserId) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    // Post the image to the Instagram account
+    const instagramResponse = await postImageToInstagramAccount({
+      igUserId,
+      accessToken,
+      imageUrl,
+      mediaTypeStory: true,
+    });
+
+    // Return the response data from the Instagram API
+    res.status(200).json(instagramResponse);
+  } catch (error) {
+    // If an error occurs, return a server error response
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/**
  * Handles the request to post a video to Instagram's stories.
  *
  * https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media/#story-video-specifications

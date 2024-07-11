@@ -17,12 +17,18 @@ exports.postImageToInstagramAccount = async ({
   accessToken,
   imageUrl,
   caption = "",
+  mediaTypeStory,
 }) => {
   try {
     // Construct the URL for the API request to create container for image uploading
-    const apiUrl =
+    let apiUrl =
       `https://graph.facebook.com/v20.0/${igUserId}/media?` +
       `image_url=${imageUrl}&caption=${caption}&access_token=${accessToken}`;
+
+    // If mediaTypeStory is true, add the media_type=STORIES parameter
+    if (mediaTypeStory) {
+      apiUrl += `&media_type=STORIES`;
+    }
 
     // Make a POST request to the Instagram API to post the image
     const { data } = await axios.post(apiUrl);
