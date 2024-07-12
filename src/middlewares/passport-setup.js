@@ -1,6 +1,12 @@
 // Set up Passport.js for Facebook authentication
 const passport = require("passport");
-const { facebookAppId, facebookAppSecret, apiUrl } = require("../config");
+const {
+  facebookAppId,
+  facebookAppSecret,
+  apiUrl,
+  twitterKey,
+  twitterSecret,
+} = require("../config");
 const FacebookStrategy = require("passport-facebook").Strategy;
 const TwitterStrategy = require("passport-twitter").Strategy;
 
@@ -45,6 +51,22 @@ passport.use(
       // Here, you can use the profile info (mainly profile id) to check if the user is registered in your db
       // and decide whether to create a new user or return the existing user.
       profile.accessToken = accessToken;
+      return done(null, profile);
+    }
+  )
+);
+
+// Configure passport.js to use the twitter strategy
+passport.use(
+  new TwitterStrategy(
+    {
+      consumerKey: twitterKey,
+      consumerSecret: twitterSecret,
+      callbackURL: `${apiUrl}/apis/auth/twitter/callback`,
+    },
+    function (token, tokenSecret, profile, done) {
+      profile.token = token;
+      profile.tokenSecret = tokenSecret;
       return done(null, profile);
     }
   )
