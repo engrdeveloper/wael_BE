@@ -2,9 +2,8 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 const crypto = require("crypto");
-const { appURL, apiUrl, twitterKey, twitterSecret } = require("../config");
+const { appURL, apiUrl } = require("../config");
 const axios = require("axios");
-const qs = require("qs");
 const { handleUserFacebookLoginSuccess } = require("../controllers/facebook");
 // Initiate the Facebook authentication process
 router.get("/facebook", passport.authenticate("facebook"));
