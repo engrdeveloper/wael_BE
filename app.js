@@ -56,6 +56,13 @@ app.use("/apis/user", UserRouter);
 
 // Routes for handling facebook posting
 app.use("/apis/facebook", require("./src/routes/facebook"));
+
+// Routes for handling instagram posting
+app.use("/apis/instagram", require("./src/routes/instagram"));
+
+// Routes for handling twitter posting
+app.use("/apis/twitter", require("./src/routes/twitter"));
+
 // Start the server and listen on the specified port
 app.listen(port, (err) => {
   // Log an error if there was an error in server setup
