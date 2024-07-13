@@ -139,7 +139,9 @@ exports.postTextTweetToTwitter = async (req, res) => {
     res.status(200).json({ success: true, data: response.data });
   } catch (error) {
     // Log the error and send the error response
-    res.status(500).json({ success: false, error: error.message });
+    res
+      .status(500)
+      .json({ success: false, error: error?.message, reason: error?.data });
   }
 };
 
@@ -224,6 +226,8 @@ exports.postImageTweetToTwitter = async (req, res) => {
     res.status(200).json({ success: true, data: response.data });
   } catch (error) {
     // Log the error and send the error response
-    res.status(500).json({ success: false, error: error.message });
+    res
+      .status(500)
+      .json({ success: false, error: error.message, reason: error?.data });
   }
 };
