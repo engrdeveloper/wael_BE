@@ -280,7 +280,7 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
           // Set the file path for the downloaded image
           const filePath = path.resolve(assetsPath, "twitter_image.jpg");
           // Download the image from the provided URL
-          await downloadMedia(url, filePath);
+          await downloadMedia(media.imageUrl, filePath);
           // Upload the image to Twitter and get the media ID
           const mediaId = await client.v1.uploadMedia(filePath);
           return mediaId;
@@ -288,7 +288,7 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
           // Set the file path for the downloaded image
           const filePath = path.resolve(assetsPath, "twitter_video.mp4");
           // Download the image from the provided URL
-          await downloadMedia(url, filePath);
+          await downloadMedia(media.videoUrl, filePath);
           // Upload the image to Twitter and get the media ID
           const mediaId = await client.v1.uploadMedia(filePath);
           return mediaId;
