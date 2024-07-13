@@ -231,3 +231,114 @@ exports.postImageTweetToTwitter = async (req, res) => {
       .json({ success: false, error: error.message, reason: error?.data });
   }
 };
+
+/**
+ * Handles the request to post a carousel of images to Twitter.
+ *
+ * @param {Object} req - The request object containing the image URLs, access token, and access token secret.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>} - A promise that resolves when the tweet is posted successfully.
+ */
+exports.postCarouselTweetToTwitter = async (req, res) => {
+  // Destructure the request body
+  const { text, imageUrls, accessToken, accessTokenSecret } = req.body;
+
+  // Check if all required parameters are present
+  if (!text || !imageUrls || !accessToken || !accessTokenSecret) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  // Allow only 4 images
+  if (!Array.isArray(imageUrls) || imageUrls.length > 4) {
+    return res.status(400).json({ error: "Maximum 4 images allowed" });
+  }
+
+  try {
+    // Create the assets directory if it doesn't exist
+    const assetsPath = path.join(__dirname, "..", "assets");
+    await ensureDirectoryExists(assetsPath);
+
+    // Set the file path for the downloaded image
+    const filePath = path.resolve(assetsPath, "twitter_image.jpg");
+
+    // Instantiate the Twitter API client
+    const client = twitterApiClient(accessToken, accessTokenSecret);
+
+    // Process the image one by one
+    const mediaIds = await Promise.all(
+      imageUrls.map(async (url) => {
+        // Download the image from the provided URL
+        await downloadImage(url, filePath);
+        // Upload the image to Twitter and get the media ID
+        const mediaId = await client.v1.uploadMedia(filePath);
+        return mediaId;
+      })
+    );
+
+    // Make the request to post the tweet with the image
+    const response = await client.v2.tweet({
+      text,
+      media: {
+        media_ids: mediaIds,
+      },
+    });
+
+    // Send the response
+    res.status(200).json({ success: true, data: response.data });
+  } catch (error) {
+    // Log the error and send the error response
+    res
+      .status(500)
+      .json({ success: false, error: error.message, reason: error?.data });
+  }
+};
+
+/**
+ * Posts a video tweet to the Twitter account associated with the provided access token and access token secret.
+ * 
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>} - A promise that resolves when the tweet is posted successfully.
+ */
+exports.postVideoTweetToTwitter = async (req, res) => {
+  // Destructure the request body
+  const { text, videoUrl, accessToken, accessTokenSecret } = req.body;
+
+  // Check if all required parameters are present
+  if (!text || !videoUrl || !accessToken || !accessTokenSecret) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  try {
+    const assetsPath = path.join(__dirname, "..", "assets");
+    await ensureDirectoryExists(assetsPath);
+
+    // Set the file path for the downloaded video
+    const filePath = path.resolve(assetsPath, "twitter_video.mp4");
+
+    // Download the video from the provided URL
+    await downloadImage(videoUrl, filePath);
+
+    // Instantiate the Twitter API client
+    const client = twitterApiClient(accessToken, accessTokenSecret);
+
+    // Upload the video to Twitter and get the media ID
+    const mediaId = await client.v1.uploadMedia(filePath);
+
+    // Make the request to post the tweet with the video
+    const response = await client.v2.tweet({
+      text,
+      media: {
+        media_ids: [mediaId],
+      },
+    });
+
+    // Send the response
+    res.status(200).json({ success: true, data: response.data });
+  } catch (error) {
+    // Log the error and send the error response
+    res
+      .status(500)
+      .json({ success: false, error: error.message, reason: error?.data });
+  }
+};
