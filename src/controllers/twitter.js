@@ -145,16 +145,28 @@ exports.postTextTweetToTwitter = async (req, res) => {
   }
 };
 
-async function downloadImage(url, filePath) {
+/**
+ * Downloads a media file from the given URL and saves it to the specified file path.
+ *
+ * @param {string} url - The URL of the media file to download.
+ * @param {string} filePath - The path where the media file will be saved.
+ * @returns {Promise} - A Promise that resolves when the media file is successfully downloaded and saved.
+ */
+async function downloadMedia(url, filePath) {
+  // Send a GET request to the media URL with the response type set to "stream"
   const response = await axios({
     url,
     responseType: "stream",
   });
 
+  // Create a write stream to the specified file path
   return new Promise((resolve, reject) => {
     const writer = fs.createWriteStream(filePath);
+    // Pipe the response data to the write stream
     response.data.pipe(writer);
+    // Resolve the Promise when the writing is finished
     writer.on("finish", resolve);
+    // Reject the Promise if there is an error during writing
     writer.on("error", reject);
   });
 }
@@ -206,7 +218,7 @@ exports.postImageTweetToTwitter = async (req, res) => {
     const filePath = path.resolve(assetsPath, "twitter_image.jpg");
 
     // Download the image from the provided URL
-    await downloadImage(imageUrl, filePath);
+    await downloadMedia(imageUrl, filePath);
 
     // Instantiate the Twitter API client
     const client = twitterApiClient(accessToken, accessTokenSecret);
@@ -241,15 +253,15 @@ exports.postImageTweetToTwitter = async (req, res) => {
  */
 exports.postCarouselTweetToTwitter = async (req, res) => {
   // Destructure the request body
-  const { text, imageUrls, accessToken, accessTokenSecret } = req.body;
+  const { text, mediaUrls, accessToken, accessTokenSecret } = req.body;
 
   // Check if all required parameters are present
-  if (!text || !imageUrls || !accessToken || !accessTokenSecret) {
+  if (!text || !mediaUrls || !accessToken || !accessTokenSecret) {
     return res.status(400).json({ error: "Missing required parameters" });
   }
 
   // Allow only 4 images
-  if (!Array.isArray(imageUrls) || imageUrls.length > 4) {
+  if (!Array.isArray(mediaUrls) || mediaUrls.length > 4) {
     return res.status(400).json({ error: "Maximum 4 images allowed" });
   }
 
@@ -258,20 +270,29 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
     const assetsPath = path.join(__dirname, "..", "assets");
     await ensureDirectoryExists(assetsPath);
 
-    // Set the file path for the downloaded image
-    const filePath = path.resolve(assetsPath, "twitter_image.jpg");
-
     // Instantiate the Twitter API client
     const client = twitterApiClient(accessToken, accessTokenSecret);
 
     // Process the image one by one
     const mediaIds = await Promise.all(
-      imageUrls.map(async (url) => {
-        // Download the image from the provided URL
-        await downloadImage(url, filePath);
-        // Upload the image to Twitter and get the media ID
-        const mediaId = await client.v1.uploadMedia(filePath);
-        return mediaId;
+      mediaUrls.map(async (media) => {
+        if (media.type == "image") {
+          // Set the file path for the downloaded image
+          const filePath = path.resolve(assetsPath, "twitter_image.jpg");
+          // Download the image from the provided URL
+          await downloadMedia(url, filePath);
+          // Upload the image to Twitter and get the media ID
+          const mediaId = await client.v1.uploadMedia(filePath);
+          return mediaId;
+        } else {
+          // Set the file path for the downloaded image
+          const filePath = path.resolve(assetsPath, "twitter_video.mp4");
+          // Download the image from the provided URL
+          await downloadMedia(url, filePath);
+          // Upload the image to Twitter and get the media ID
+          const mediaId = await client.v1.uploadMedia(filePath);
+          return mediaId;
+        }
       })
     );
 
@@ -295,7 +316,7 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
 
 /**
  * Posts a video tweet to the Twitter account associated with the provided access token and access token secret.
- * 
+ *
  * @param {Object} req - The request object.
  * @param {Object} res - The response object.
  * @returns {Promise<void>} - A promise that resolves when the tweet is posted successfully.
@@ -317,7 +338,7 @@ exports.postVideoTweetToTwitter = async (req, res) => {
     const filePath = path.resolve(assetsPath, "twitter_video.mp4");
 
     // Download the video from the provided URL
-    await downloadImage(videoUrl, filePath);
+    await downloadMedia(videoUrl, filePath);
 
     // Instantiate the Twitter API client
     const client = twitterApiClient(accessToken, accessTokenSecret);
