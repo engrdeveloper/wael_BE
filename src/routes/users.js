@@ -31,4 +31,9 @@ router.post("/forget", userController.forgetPass);
 // POST /api/users/updatePass - Updates the password of the user with the given token
 router.post("/updatePass", auth, userController.updatePass);
 
+router.get("/pages/:userId", auth, userController.getPagesByUserId);
+
+router.get("/mainUserPages/:mainUserId", auth, userController.getPagesByMainUserId);
+
+
 module.exports = router;

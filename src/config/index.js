@@ -6,9 +6,9 @@ module.exports = {
   apiUrl: process.env.REACT_APP_API_URL,
   mySql: {
     hostname: process.env.HOSTNAME,
-    username: process.env.USERNAME,
+    username: process.env.DBUSERNAME,
     db: process.env.DB,
-    port: process.env.PORT,
+    port: process.env.DBPORT,
     password: process.env.PASSWORD,
   },
   port: process.env.PORT || 4000,
@@ -23,4 +23,9 @@ module.exports = {
   linkedinAppSecret: process.env.LINKEDIN_APP_SECRET,
   twitterKey: process.env.TWITTER_KEY,
   twitterSecret: process.env.TWITTER_SECRET,
+  redisConfig:{
+    host: process.env.REDIS_HOST,
+    port:process.env.REDIS_PORT,
+    db: process.env.REDIS_DATABASE,
+  }
 };

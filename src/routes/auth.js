@@ -4,9 +4,20 @@ const passport = require("passport");
 const crypto = require("crypto");
 const { appURL, apiUrl } = require("../config");
 const axios = require("axios");
-const { handleUserFacebookLoginSuccess } = require("../controllers/facebook");
+const { handleUserFacebookLoginSuccess, getLongLivedPageToken } = require("../controllers/facebook");
+const { addPage } = require('../services/pages')
+const { addUserPage } = require('../services/userPages')
 // Initiate the Facebook authentication process
-router.get("/facebook", passport.authenticate("facebook"));
+
+router.get("/facebook", ((req, res, next) => {
+
+  const user = req.query.myVar
+
+  passport.authenticate("facebook", {
+    state: user
+  })(req, res, next)
+
+}));
 
 const appUrlRdirect = appURL + "/publish";
 
@@ -16,12 +27,39 @@ const appUrlRdirect = appURL + "/publish";
 router.get(
   "/facebook/callback",
   passport.authenticate("facebook", {
-    failureRedirect: appUrlRdirect,
+    failureRedirect: appUrlRdirect
   }),
   async (req, res) => {
-    await handleUserFacebookLoginSuccess(req.user);
-    // res.send({ pagesData });
-    res.redirect(appUrlRdirect);
+    try {
+
+      const pagesData = await handleUserFacebookLoginSuccess(req.user);
+
+      console.log(req.user.userSqlId, 'iiiiiiiii')
+
+      if (Array.isArray(pagesData) && pagesData.length > 0) {
+
+        for (let i = 0; i < pagesData.length; i++) {
+
+          const page = pagesData[i]
+          // const longToken = await getLongLivedPageToken(page?.access_token, page?.id)
+          const channel = await addPage(page?.id, page?.access_token, page?.name, req.user.accessToken, req?.user?.userSqlId)
+          console.log(channel, '.....')
+
+          const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel?.dataValues.id)
+        }
+
+      }
+
+      // res.send({pagesData});
+      res.redirect(appUrlRdirect);
+    }
+    catch (e) {
+      console.log('error while signing up', e.message)
+      return res.status(500).json({
+        success: false,
+        error: { message: 'Error while signing up to facebook', reason: e.message }
+      })
+    }
   }
 );
 
@@ -60,9 +98,9 @@ router.get("/linkedin", (req, res) => {
   const state = crypto.randomBytes(16).toString("hex");
 
   // Construct the authorization URL for LinkedIn
-  const authorizationUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(
+  const authorizationUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${ clientId }&redirect_uri=${ encodeURIComponent(
     redirectUri
-  )}&state=${state}&scope=${encodeURIComponent(scope)}`;
+  ) }&state=${ state }&scope=${ encodeURIComponent(scope) }`;
 
   // Redirect the user to the LinkedIn authorization URL
   res.redirect(authorizationUrl);
@@ -103,7 +141,7 @@ router.get("/linkedin/callback", async (req, res) => {
     // Get the user information from the LinkedIn API
     const userInfoResponse = await axios.get("https://api.linkedin.com/v2/me", {
       headers: {
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${ access_token }`,
       },
       timeout: 30000,
     });
@@ -116,7 +154,7 @@ router.get("/linkedin/callback", async (req, res) => {
           q: "roleAssignee",
         },
         headers: {
-          Authorization: `Bearer ${access_token}`,
+          Authorization: `Bearer ${ access_token }`,
           "Linkedin-Version": "202406",
           "X-Restli-Protocol-Version": "2.0.0",
         },
@@ -130,7 +168,8 @@ router.get("/linkedin/callback", async (req, res) => {
 
     // Redirect the user to the main page
     res.redirect(appUrlRdirect);
-  } catch (error) {
+  }
+  catch (error) {
     // Log the error and send an error response
     console.log(322222, error);
     res.redirect(appUrlRdirect);

@@ -1,12 +1,12 @@
 /**
- * Defines the UserChannels model.
+ * Defines the UserPages model.
  * @param {Object} sequelize - The Sequelize instance.
  * @param {Object} DataTypes - The DataTypes object from Sequelize.
- * @returns {Object} - The UserChannels model.
+ * @returns {Object} - The UserPages model.
  */
 module.exports = (sequelize, DataTypes) => {
-  // Define the UserChannels model with the userId, role, mainUserId, and channelId properties.
-  const UserChannels = sequelize.define("UserChannels", {
+  // Define the UserPages model with the userId, role, mainUserId, and pageId properties.
+  const UserPages = sequelize.define("UserPages", {
     /**
      * The ID of the user.
      * @type {number}
@@ -15,35 +15,34 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       allowNull: false,
       required: true,
+      primaryKey: false
+    },
+    userEmail: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      required: true,
+      primaryKey: false
     },
     /**
-     * The role of the user in the channel.
+     * The role of the user in the page.
      * @type {string}
      */
     role: {
       type: DataTypes.ENUM,
-      values: ["maintainer", "editor"],
+      values: ["maintainer", "editor", "owner"],
       required: true,
     },
     /**
-     * The ID of the main user.
+     * The ID of the page.
      * @type {number}
      */
-    mainUserId: {
+    pageId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       required: true,
-    },
-    /**
-     * The ID of the channel.
-     * @type {number}
-     */
-    channelId: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      required: true,
+      primaryKey: false
     },
   });
 
-  return UserChannels;
+  return UserPages;
 };

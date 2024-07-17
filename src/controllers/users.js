@@ -399,3 +399,77 @@ exports.updatePass = async (req, res) => {
     });
   }
 };
+
+/**
+ * Retrieves a single Page from the database.
+ * @param {Object} req - The request object.
+ * @param {Object} res - The response object.
+ * @returns {Promise<void>}
+ */
+exports.getPagesByUserId = async (req, res) => {
+  try {
+    // Get the pages ID from the request parameters
+    const user = req.params.userId;
+
+    // Check if the page ID is missing
+    if (!user) {
+      return res.status(500).json({
+        success: false,
+        error: { message: "User ID is required" },
+      });
+    }
+
+    // Retrieve the page from the database
+    const page = await userService.getPagesWithUserId(user);
+
+    // Check if the channel is not found
+    if (!page) {
+      return res
+          .status(200)
+          .json({ success: false, message: "User Channel Not Found" });
+    }
+
+    // Return the channel as a success response
+    res.status(200).json({ success: true, data: { page } });
+  } catch (error) {
+    // Return an error response with details
+    res.status(500).json({
+      success: false,
+      error: { message: "Something went wrong", reason: error.message },
+    });
+  }
+};
+
+exports.getPagesByMainUserId = async (req, res) => {
+  try {
+    // Get the pages ID from the request parameters
+    const user = req.params.mainUserId;
+
+    // Check if the page ID is missing
+    if (!user) {
+      return res.status(500).json({
+        success: false,
+        error: { message: "User ID is required" },
+      });
+    }
+
+    // Retrieve the page from the database
+    const page = await userService.getPagesWithMainUserId(user);
+
+    // Check if the channel is not found
+    if (!page) {
+      return res
+          .status(200)
+          .json({ success: false, message: "User Channel Not Found" });
+    }
+
+    // Return the channel as a success response
+    res.status(200).json({ success: true, data: { page } });
+  } catch (error) {
+    // Return an error response with details
+    res.status(500).json({
+      success: false,
+      error: { message: "Something went wrong", reason: error.message },
+    });
+  }
+};
