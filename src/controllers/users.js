@@ -27,7 +27,8 @@ exports.addUser = async (req, res) => {
     res
       .status(200)
       .json({ success: true, message: "User Created Successfully" });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -66,7 +67,8 @@ exports.getOneUser = async (req, res) => {
 
     // Return the user as a success response
     res.status(200).json(user);
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -116,7 +118,8 @@ exports.updateUser = async (req, res) => {
 
     // Return the updated user as a success response
     res.status(200).json({ success: true, data: { updatedUser } });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -157,7 +160,8 @@ exports.deleteUser = async (req, res) => {
     res
       .status(200)
       .json({ success: true, message: "User Deleted Successfully" });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -215,7 +219,8 @@ exports.login = async (req, res) => {
     res
       .status(200)
       .json({ token, success: true, message: "User Login Successfully", user });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -271,7 +276,8 @@ exports.loginWithGoogle = async (req, res) => {
       token: jwtToken,
       user,
     });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -309,7 +315,8 @@ exports.getUsersByEmailPrefix = async (req, res) => {
 
     // Return the users as a success response
     res.status(200).json({ success: true, data: { users } });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -349,7 +356,8 @@ exports.forgetPass = async (req, res) => {
 
     // Return a success response with a message
     res.status(200).json({ success: true, message: "Email sent" });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -391,7 +399,8 @@ exports.updatePass = async (req, res) => {
 
     // Return the updated user as a success response
     res.status(200).json({ success: true, data: { updatedUser } });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return an error response with details
     res.status(500).json({
       success: false,
@@ -425,13 +434,14 @@ exports.getPagesByUserId = async (req, res) => {
     // Check if the channel is not found
     if (!page) {
       return res
-          .status(200)
-          .json({ success: false, message: "User Channel Not Found" });
+        .status(200)
+        .json({ success: false, message: "User Channel Not Found" });
     }
 
     // Return the channel as a success response
     res.status(200).json({ success: true, data: { page } });
-  } catch (error) {
+  }
+  catch (error) {
     // Return an error response with details
     res.status(500).json({
       success: false,
@@ -459,13 +469,14 @@ exports.getPagesByMainUserId = async (req, res) => {
     // Check if the channel is not found
     if (!page) {
       return res
-          .status(200)
-          .json({ success: false, message: "User Channel Not Found" });
+        .status(200)
+        .json({ success: false, message: "User Channel Not Found" });
     }
 
     // Return the channel as a success response
     res.status(200).json({ success: true, data: { page } });
-  } catch (error) {
+  }
+  catch (error) {
     // Return an error response with details
     res.status(500).json({
       success: false,

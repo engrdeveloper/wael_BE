@@ -10,7 +10,7 @@ const db = require("../models");
  * @returns {Promise<Object>} - A promise that resolves to the created page object.
  */
 exports.addPage = async (pageId, pageToken, name, userToken, userId) => {
-    return db.Pages.create({pageId, pageToken, name, userToken, userId});
+  return db.Pages.findOrCreate({ where: { pageId }, defaults:{ pageToken, name, userToken, userId} });
 };
 
 /**
@@ -19,7 +19,7 @@ exports.addPage = async (pageId, pageToken, name, userToken, userId) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the page object or null if not found.
  */
 exports.getOnePage = async (pageId) => {
-    return db.Pages.findOne({ pageId });
+  return db.Pages.findOne({ pageId });
 };
 
 /**
@@ -32,12 +32,12 @@ exports.getOnePage = async (pageId) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the updated page object or null if not found.
  */
 exports.updatePage = async (pageId, userId, role, mainUserId) => {
-    const page = await db.Pages.findByPk(pageId);
-    if (!page) {
-        return null;
-    }
-    await page.update({userId, role, mainUserId});
-    return page;
+  const page = await db.Pages.findByPk(pageId);
+  if (!page) {
+    return null;
+  }
+  await page.update({ userId, role, mainUserId });
+  return page;
 };
 
 /**
@@ -46,9 +46,9 @@ exports.updatePage = async (pageId, userId, role, mainUserId) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the deleted page object or null if not found.
  */
 exports.deletePageById = async (pageId) => {
-    const page = await db.Pages.findByPk(pageId);
-    if (!page) {
-        return null;
-    }
-    return page.destroy();
+  const page = await db.Pages.findByPk(pageId);
+  if (!page) {
+    return null;
+  }
+  return page.destroy();
 };

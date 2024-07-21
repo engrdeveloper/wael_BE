@@ -3,8 +3,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const { mySql } = require("../config/index");
 
-console.log(mySql)
-
 // Create a new Sequelize instance with the connection details from the config file.
 const sequelize = new Sequelize(mySql.db, mySql.username, mySql.password, {
   dialect: "mysql",

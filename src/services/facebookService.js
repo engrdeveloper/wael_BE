@@ -107,8 +107,6 @@ const uploadImageToFacebook = async (
   published = false
 ) => {
 
-  console.log(pageId, imageUrl, caption, accessToken, ',,,,,,,,,,')
-
   // Make a POST request to the Facebook Graph API to upload an image to the page's feed.
   return axios.post(
     `https://graph.facebook.com/${ pageId }/photos`,
@@ -486,7 +484,6 @@ const storyVideoToFbPageFeed = async ({ accessToken, pageId, videoUrl }) => {
     return response.data;
   }
   catch (error) {
-    console.log(22222, error);
     // Handle any errors that occur while posting to Facebook.
     handleError(error);
   }
@@ -547,11 +544,24 @@ const savePostToDb = async (postObj) => {
 }
 
 const updatePostToDb = async (postId, postObj) => {
-  const post = await db.Posts.findByPk(postId);
+  let post = await db.Posts.findByPk(postId);
   if (!post) {
     return null;
   }
-  return post.update(postObj);
+
+  let updateObj = {}
+
+  if (post.isApproved) {
+    updateObj = { ...postObj, isApproved: true };
+  }
+
+  if (post.status === 'sent') {
+    updateObj = { ...postObj, status: 'sent' };
+  }
+
+  return post.update({ ...postObj, ...updateObj });
+
+
 }
 
 module.exports = {

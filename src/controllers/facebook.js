@@ -81,7 +81,17 @@ exports.textPostToPageFeed = async (req, res) => {
   try {
 
     // Extract the required parameters from the request body
-    const { pageId, postText, draft, shouldSchedule, scheduleDate, scheduleTimeSecs, postId: editId } = req.body;
+    const {
+      pageId,
+      postText,
+      draft,
+      shouldSchedule,
+      scheduleDate,
+      scheduleTimeSecs,
+      postId: editId,
+      isApproved,
+      status
+    } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
     if (!pageId || !postText) {
@@ -103,12 +113,12 @@ exports.textPostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'post',
-        isApproved: true,
-        status: draft ? 'draft' : 'sent',
+        isApproved,
+        status: status,
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
 
         await delKey(`text:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -124,19 +134,20 @@ exports.textPostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'post',
-        isApproved: true,
-        status: draft ? 'draft' : 'sent',
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        isApproved,
+        status: status,
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(`text:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
       // Post the text to the Facebook page's feed
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
         const facebookResponse = await textPostToFbPageFeed({
           accessToken: pageToken,
           pageId,
@@ -176,7 +187,8 @@ exports.singleImagePostToPageFeed = async (req, res) => {
       shouldSchedule,
       scheduleTimeSecs,
       scheduleDate,
-      postId: editId
+      postId: editId,
+      isApproved
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -199,13 +211,13 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         pageId,
         text: caption,
         type: 'post',
-        isApproved: false,
+        isApproved: isApproved,
         status: status,
         imageUrl: JSON.stringify([imageUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
 
         await delKey(`textWithImage:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -222,19 +234,20 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         pageId,
         text: caption,
         type: 'post',
-        isApproved: false,
+        isApproved,
         status: status,
         imageUrl: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(`textWithImage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
         // Post the single image to the Facebook page's feed
         const facebookResponse = await singleImagePostToFbPageFeed({
           accessToken: pageToken,
@@ -278,7 +291,8 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
       shouldSchedule,
       scheduleTimeSecs,
       scheduleDate,
-      postId: editId
+      postId: editId,
+      isApproved
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -301,13 +315,13 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'post',
-        isApproved: false,
+        isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
 
         await delKey(`textWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -322,19 +336,20 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'post',
-        isApproved: false,
+        isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(`textWithMultipleImage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
         const facebookResponse = await multipleImagePostToFbPageFeed({
           accessToken: pageToken,
           pageId,
@@ -375,7 +390,8 @@ exports.videoPostToPageFeed = async (req, res) => {
       shouldSchedule,
       scheduleTimeSecs,
       scheduleDate,
-      postId: editId
+      postId: editId,
+      isApproved
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -391,7 +407,6 @@ exports.videoPostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
-
     if (editId) {
 
       const update = await updatePostToDb(editId, {
@@ -399,13 +414,13 @@ exports.videoPostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'post',
-        isApproved: false,
+        isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
 
         await delKey(`videoFBPage:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -421,19 +436,20 @@ exports.videoPostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'post',
-        isApproved: false,
+        isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(`videoFBPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
 
         // Post the video to the Facebook page's feed
         const facebookResponse = await videoPostToFbPageFeed({
@@ -477,7 +493,8 @@ exports.reelPostToPageFeed = async (req, res) => {
       shouldSchedule,
       scheduleTimeSecs,
       scheduleDate,
-      postId: editId
+      postId: editId,
+      isApproved
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -500,13 +517,13 @@ exports.reelPostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'reel',
-        isApproved: false,
+        isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
 
         await delKey(`reelToPage:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -522,19 +539,20 @@ exports.reelPostToPageFeed = async (req, res) => {
         pageId,
         text: postText,
         type: 'reel',
-        isApproved: false,
+        isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && isApproved && !draft) {
         await setKeyWithExpiry(`reelToPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
 
         // Post the reels video to the Facebook page's feed
         // The description is an optional field for the video
@@ -578,7 +596,8 @@ exports.storyVideoToPageFeed = async (req, res) => {
       shouldSchedule,
       scheduleTimeSecs,
       scheduleDate,
-      postId: editId
+      postId: editId,
+      isApproved
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -600,13 +619,13 @@ exports.storyVideoToPageFeed = async (req, res) => {
         pageId,
         text: null,
         type: 'story',
-        isApproved: false,
+        isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
 
         await delKey(`storyVideoToPage:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -621,19 +640,20 @@ exports.storyVideoToPageFeed = async (req, res) => {
         pageId,
         text: null,
         type: 'story',
-        isApproved: false,
+        isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(`storyVideoToPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
         // Post the stroy video to the Facebook page's feed
         // The Facebook API expects the video to be uploaded first,
         // and then we can use the video ID to post the video to the page's feed.
@@ -670,7 +690,18 @@ exports.storyImageToPageFeed = async (req, res) => {
   try {
 
     // Extract the required parameters from the request body
-    const { pageId, imageUrl, caption, draft, status, shouldSchedule, scheduleTimeSecs, scheduleDate, postId: editId } = req.body;
+    const {
+      pageId,
+      imageUrl,
+      caption,
+      draft,
+      status,
+      shouldSchedule,
+      scheduleTimeSecs,
+      scheduleDate,
+      postId: editId,
+      isApproved
+    } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
     if (!pageId || !imageUrl) {
@@ -692,13 +723,13 @@ exports.storyImageToPageFeed = async (req, res) => {
         pageId,
         text: caption,
         type: 'story',
-        isApproved: false,
+        isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
       })
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
 
         await delKey(`storyImageToPage:${ pageId }:${ editId }:${ pageToken }`)
 
@@ -715,19 +746,20 @@ exports.storyImageToPageFeed = async (req, res) => {
         pageId,
         text: caption,
         type: 'story',
-        isApproved: false,
+        isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        createdBy: req?.user?.userId
       })
 
       const postId = addPostToDB?.dataValues.id
 
-      if (shouldSchedule && scheduleTimeSecs) {
+      if (shouldSchedule && scheduleTimeSecs && isApproved && !draft) {
         await setKeyWithExpiry(`storyImageToPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
       }
 
-      if (!draft && !shouldSchedule) {
+      if (!draft && !shouldSchedule && isApproved) {
         // Post the story image to the Facebook page's feed
         // The Facebook API expects the image to be uploaded first,
         // and then we can use the image ID to post the image to the page's feed.

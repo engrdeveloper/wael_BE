@@ -7,6 +7,13 @@
 module.exports = (sequelize, DataTypes) => {
   // Define the UserPages model with the userId, role, mainUserId, and pageId properties.
   const UserPages = sequelize.define("UserPages", {
+
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+
     /**
      * The ID of the user.
      * @type {number}

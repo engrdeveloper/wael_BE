@@ -16,47 +16,70 @@ exports.getOnePostById = async (postId) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the post object or null if not found.
  */
 
-exports.getPostsByPageId = async (pageId, status) => {
+exports.getPostsByPageId = async (pageId, status, page = 1) => {
 
   let where = {
     pageId
   }
 
-  if (status !== 'both') {
+  if (status === 'draft') {
     where = { ...where, status }
   }
+  else if (status === 'sent') {
+    where = { ...where, status, isApproved: true }
+  }
+  else if (status === 'approval') {
+    where = { ...where, isApproved: false }
+  }
 
-  console.log(where, 'kkkkk')
-
-  return db.Posts.findAll({
-    where
+  const posts = await db.Posts.findAll({
+    where,
+    limit: 10,
+    offset: (page - 1) * 10
   });
+
+
+  const totalCounts = await db.Posts.count({
+    where,
+  });
+
+  return { posts, totalCounts }
+
 };
 
 const groupByDay = async (pageId) => {
 
   const query = `
   SELECT
-    DATE_FORMAT(createdAt, '%Y-%m-%d') as day,
+    DATE_FORMAT(postedDate, '%Y-%m-%d') as day,
     JSON_ARRAYAGG(
       JSON_OBJECT(
         'id', id,
         'text', text,
         'imageUrls', imageUrls,
-        'createdAt', createdAt
+        'createdAt', createdAt,
+        'status', status,
+        'isApproved', isApproved,
+        'videoUrls', videoUrls,
+        'postedDate',postedDate,
+        'createdBy', createdBy,
+        'pageId', pageId,
+        'type', type
       )
     ) as records
   FROM
     Posts
   WHERE
     pageId = :pageId
+     AND STR_TO_DATE(postedDate, '%Y-%m-%d') BETWEEN STR_TO_DATE(:startDate, '%Y-%m-%d') AND STR_TO_DATE(:endDate, '%Y-%m-%d')
+
   GROUP BY
-    DATE_FORMAT(createdAt, '%Y-%m-%d')
+    DATE_FORMAT(postedDate, '%Y-%m-%d')
   ORDER BY
     day ASC;
 `;
   return db.sequelize.query(query, {
-    replacements: { pageId },
+    replacements: { pageId, startDate: '2024-07-21', endDate: '2024-07-25' },
     type: db.sequelize.QueryTypes.SELECT
   });
 

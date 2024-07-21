@@ -60,6 +60,8 @@ exports.getPostsByPageId = async (req, res) => {
 
     const status = req.params.status
 
+    const filters = req?.query?.filters ? JSON.parse(req.query.filters) : {}
+
     // Check if the post ID is missing
     if (!pageId) {
       return res.status(500).json({
@@ -68,9 +70,8 @@ exports.getPostsByPageId = async (req, res) => {
       });
     }
 
-    console.log(pageId, '...')
     // Retrieve the post from the database
-    const post = await postService.getPostsByPageId(pageId, status);
+    const post = await postService.getPostsByPageId(pageId, status, filters?.page);
 
     // Check if the post is not found
     if (!post) {
@@ -80,7 +81,7 @@ exports.getPostsByPageId = async (req, res) => {
     }
 
     // Return the post as a success response
-    res.status(200).json({ success: true, data: { post } });
+    res.status(200).json({ success: true, data: { ...post } });
 
   }
   catch (error) {

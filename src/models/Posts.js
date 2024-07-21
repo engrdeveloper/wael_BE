@@ -84,6 +84,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       required: true,
     },
+    createdBy: {
+      type: DataTypes.INTEGER,
+      required: true,
+    }
   });
 
   return Posts;

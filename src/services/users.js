@@ -159,7 +159,7 @@ exports.getPagesWithUserId = async (userId) => {
             {
                 model: db.Pages,
                 as: "usersPages",
-                through: {attributes: []},
+                through: {attributes: ['role']},
                 attributes: ['pageId', 'name', 'id']
             }
         ]
@@ -174,7 +174,7 @@ exports.getPagesWithMainUserId = async (userId) => {
             {
                 model: db.User,
                 as: 'usersPages',
-                attributes: ['email']
+                attributes: ['email', 'id']
             },
         ]
     })

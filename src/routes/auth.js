@@ -34,8 +34,6 @@ router.get(
 
       const pagesData = await handleUserFacebookLoginSuccess(req.user);
 
-      console.log(req.user.userSqlId, 'iiiiiiiii')
-
       if (Array.isArray(pagesData) && pagesData.length > 0) {
 
         for (let i = 0; i < pagesData.length; i++) {
@@ -43,9 +41,14 @@ router.get(
           const page = pagesData[i]
           // const longToken = await getLongLivedPageToken(page?.access_token, page?.id)
           const channel = await addPage(page?.id, page?.access_token, page?.name, req.user.accessToken, req?.user?.userSqlId)
-          console.log(channel, '.....')
 
-          const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel?.dataValues.id)
+          if(Array.isArray(channel)){
+            if(channel[1] === true){
+              const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel[0]?.dataValues.id)
+            }
+          }
+
+
         }
 
       }
@@ -171,7 +174,6 @@ router.get("/linkedin/callback", async (req, res) => {
   }
   catch (error) {
     // Log the error and send an error response
-    console.log(322222, error);
     res.redirect(appUrlRdirect);
   }
 });
