@@ -219,8 +219,192 @@ exports.approvePost = async (req, res) => {
     else {
 
       const status = await updatePostToDb(postId, { isApproved: true })
+      const type = postType
+      const post = await getOnePostById(postId)
 
-      await setKeyWithExpiry(`${ postType }:${ pageId }:${ postId }:${ pageToken }`, 'some value', 5)
+      const { text, imageUrls, videoUrls } = post
+
+      console.log(type)
+
+      if (type === 'text') {
+
+        return textPostToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          message: text,
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+      }
+
+      if (type === 'textWithImage') {
+
+        const imageUrl = !!imageUrls ? JSON.parse(imageUrls)[0] : ''
+
+        return singleImagePostToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          imageUrl,
+          caption: text,
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+
+      }
+
+
+      if (type === 'textWithMultipleImage') {
+
+        const imageUrl = !!imageUrls ? JSON.parse(imageUrls) : ''
+
+        console.log(imageUrl, 'llllll')
+
+        return multipleImagePostToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          imageUrls,
+          caption: text
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+
+      }
+
+      if (type === 'videoFBPage') {
+
+        const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
+
+        return videoPostToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          videoUrl,
+          description: text, // The optional description for the video.
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+
+      }
+
+
+      if (type === 'reelToPage') {
+
+        const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
+
+        return reelPostToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          videoUrl,
+          description: text,
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+
+      }
+
+      if (type === 'storyVideoToPage') {
+
+        const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
+
+        return storyVideoToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          videoUrl,
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+      }
+
+      if (type === 'storyImageToPage') {
+
+        const imageUrl = !!videoUrls ? JSON.parse(imageUrl)[0] : ''
+
+        return storyImageToFbPageFeed({
+          accessToken: pageToken,
+          pageId,
+          imageUrl,
+          caption: text,
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          console.log(fbResp, 'response from fb')
+          return res
+            .status(200)
+            .json({ success: true, message: "Post Approved Successfully" });
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res
+            .status(500)
+            .json({ success: false, error: { reason: err.message } });
+        })
+
+      }
+
     }
 
 

@@ -76,6 +76,7 @@ redisEvents.psubscribe('__keyevent@0__:expired', (err, count) => {
 redisEvents.on('pmessage', async (pattern, channel, message) => {
 
   try {
+
     const messageContent = message.split(':')
     const type = messageContent[0]
     const pageId = messageContent[1]
