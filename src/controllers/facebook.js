@@ -8,7 +8,7 @@ const {
   storyVideoToFbPageFeed,
   storyImageToFbPageFeed,
   savePostToDb,
-  updatePostToDb
+  updatePostToDb, updatePostStatus
 } = require("../services/facebookService");
 const { getOnePage } = require('../services/pages')
 const { setKeyWithExpiry, delKey } = require('../utils/redis')
@@ -90,7 +90,8 @@ exports.textPostToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       postId: editId,
       isApproved,
-      status
+      status,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -115,7 +116,8 @@ exports.textPostToPageFeed = async (req, res) => {
         type: 'post',
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
@@ -137,7 +139,9 @@ exports.textPostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -148,18 +152,27 @@ exports.textPostToPageFeed = async (req, res) => {
 
       // Post the text to the Facebook page's feed
       if (!draft && !shouldSchedule && isApproved) {
-        const facebookResponse = await textPostToFbPageFeed({
+
+       return textPostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           message: postText,
-        });
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          return res.status(200).json({ success: true, data: { fbResp } });
+
+        }).catch(async err => {
+          console.log(err.message)
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
+        })
 
       }
 
     }
 
-    // Return the response data from the Facebook API
-    res.status(200).json({ success: true });
+    return res.status(200).json({ success: true });
+
 
   }
   catch (error) {
@@ -188,7 +201,8 @@ exports.singleImagePostToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       scheduleDate,
       postId: editId,
-      isApproved
+      isApproved,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -213,8 +227,9 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         type: 'post',
         isApproved: isApproved,
         status: status,
-        imageUrl: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        imageUrls: JSON.stringify([imageUrl]),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
@@ -236,9 +251,11 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         type: 'post',
         isApproved,
         status: status,
-        imageUrl: JSON.stringify([imageUrl]),
+        imageUrls: JSON.stringify([imageUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -249,15 +266,21 @@ exports.singleImagePostToPageFeed = async (req, res) => {
 
       if (!draft && !shouldSchedule && isApproved) {
         // Post the single image to the Facebook page's feed
-        const facebookResponse = await singleImagePostToFbPageFeed({
+        return singleImagePostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           imageUrl,
           caption,
-        });
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
 
-        // Return the response data from the Facebook API
-        return res.status(200).json(facebookResponse);
+          return res.status(200).json({ success: true, data: { fbResp } });
+
+        }).catch(async err => {
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
+        })
+
       }
 
     }
@@ -292,7 +315,8 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       scheduleDate,
       postId: editId,
-      isApproved
+      isApproved,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -318,7 +342,8 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
@@ -340,7 +365,9 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         status: status,
         imageUrls: JSON.stringify(imageUrls),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -350,15 +377,22 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
       }
 
       if (!draft && !shouldSchedule && isApproved) {
-        const facebookResponse = await multipleImagePostToFbPageFeed({
+
+        return multipleImagePostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           imageUrls,
           caption: postText
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          return res.status(200).json({ success: true, data: { fbResp } });
+
+        }).catch(async err => {
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
+
         });
 
-        // Return the response data from the Facebook API
-        return res.status(200).json(facebookResponse);
       }
     }
 
@@ -391,7 +425,8 @@ exports.videoPostToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       scheduleDate,
       postId: editId,
-      isApproved
+      isApproved,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -417,7 +452,8 @@ exports.videoPostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
@@ -440,7 +476,9 @@ exports.videoPostToPageFeed = async (req, res) => {
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -452,19 +490,21 @@ exports.videoPostToPageFeed = async (req, res) => {
       if (!draft && !shouldSchedule && isApproved) {
 
         // Post the video to the Facebook page's feed
-        const facebookResponse = await videoPostToFbPageFeed({
+        return videoPostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           videoUrl,
           description: postText, // The optional description for the video.
-        });
-
-        return res.status(200).json(facebookResponse);
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          return res.status(200).json({ success: true, data: { fbResp } });
+        }).catch(async err => {
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
+        })
 
       }
     }
-
-    // Return the response data from the Facebook API
 
     res.status(200).json({ success: true });
   }
@@ -494,7 +534,8 @@ exports.reelPostToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       scheduleDate,
       postId: editId,
-      isApproved
+      isApproved,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -520,7 +561,8 @@ exports.reelPostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
@@ -543,7 +585,9 @@ exports.reelPostToPageFeed = async (req, res) => {
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -556,15 +600,19 @@ exports.reelPostToPageFeed = async (req, res) => {
 
         // Post the reels video to the Facebook page's feed
         // The description is an optional field for the video
-        const facebookResponse = await reelPostToFbPageFeed({
+        return reelPostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           videoUrl,
           description: postText,
-        });
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          return res.status(200).json({ success: true, data: { fbResp } });
+        }).catch(async err => {
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
+        })
 
-        // Return the response data from the Facebook API
-        return res.status(200).json(facebookResponse);
       }
     }
 
@@ -597,7 +645,8 @@ exports.storyVideoToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       scheduleDate,
       postId: editId,
-      isApproved
+      isApproved,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -622,7 +671,8 @@ exports.storyVideoToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
@@ -644,7 +694,9 @@ exports.storyVideoToPageFeed = async (req, res) => {
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -657,14 +709,19 @@ exports.storyVideoToPageFeed = async (req, res) => {
         // Post the stroy video to the Facebook page's feed
         // The Facebook API expects the video to be uploaded first,
         // and then we can use the video ID to post the video to the page's feed.
-        const facebookResponse = await storyVideoToFbPageFeed({
+        return storyVideoToFbPageFeed({
           accessToken: pageToken,
           pageId,
           videoUrl,
-        });
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          return res.status(200).json({ success: true, data: { fbResp } });
+        }).catch(async err => {
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
 
-        // Return the response data from the Facebook API
-        return res.status(200).json(facebookResponse);
+        })
+
       }
     }
 
@@ -700,7 +757,8 @@ exports.storyImageToPageFeed = async (req, res) => {
       scheduleTimeSecs,
       scheduleDate,
       postId: editId,
-      isApproved
+      isApproved,
+      postType
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -726,7 +784,8 @@ exports.storyImageToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss')
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postType
       })
 
       if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
@@ -750,7 +809,9 @@ exports.storyImageToPageFeed = async (req, res) => {
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        createdBy: req?.user?.userId
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -763,15 +824,20 @@ exports.storyImageToPageFeed = async (req, res) => {
         // Post the story image to the Facebook page's feed
         // The Facebook API expects the image to be uploaded first,
         // and then we can use the image ID to post the image to the page's feed.
-        const facebookResponse = await storyImageToFbPageFeed({
+        return storyImageToFbPageFeed({
           accessToken: pageToken,
           pageId,
           imageUrl,
           caption,
-        });
+        }).then(async fbResp => {
+          const status = await updatePostStatus(postId, 'sent')
+          return res.status(200).json({ success: true, data: { fbResp } });
+        }).catch(async err => {
+          const status = await updatePostStatus(postId, 'not sent', err.message)
+          return res.status(500).json({ success: false, error: { message: err.message } });
 
-        // Return the response data from the Facebook API
-        return res.status(200).json(facebookResponse);
+        })
+
       }
     }
 

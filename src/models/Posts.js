@@ -76,8 +76,8 @@ module.exports = (sequelize, DataTypes) => {
      * @type {status}
      */
     status: {
-      type: DataTypes.ENUM,
-      values: ["queue", "sent", "draft"],
+      type: DataTypes.STRING,
+      defaultValue: 'queued',
       required: true,
     },
     postedDate: {
@@ -87,7 +87,20 @@ module.exports = (sequelize, DataTypes) => {
     createdBy: {
       type: DataTypes.INTEGER,
       required: true,
+    },
+    createdByEmail: {
+      type: DataTypes.STRING,
+      required: true,
+    },
+    error: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    postType: {
+      type: DataTypes.STRING,
+      required: true
     }
+
   });
 
   return Posts;

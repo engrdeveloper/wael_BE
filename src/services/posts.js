@@ -1,5 +1,5 @@
 const db = require("../models");
-const { fn, col, Sequelize } = require('sequelize');
+const { Op } = require('sequelize');
 
 /**
  * Retrieves a post from the Pages table by its ID.
@@ -29,7 +29,7 @@ exports.getPostsByPageId = async (pageId, status, page = 1) => {
     where = { ...where, status, isApproved: true }
   }
   else if (status === 'approval') {
-    where = { ...where, isApproved: false }
+    where = { ...where, isApproved: false, status: { [Op.eq]: 'queued' }, }
   }
 
   const posts = await db.Posts.findAll({
@@ -64,7 +64,9 @@ const groupByDay = async (pageId) => {
         'postedDate',postedDate,
         'createdBy', createdBy,
         'pageId', pageId,
-        'type', type
+        'type', type,
+        'createdByEmail', createdByEmail,
+        'error', error
       )
     ) as records
   FROM

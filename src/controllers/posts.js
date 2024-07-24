@@ -1,6 +1,17 @@
 const postService = require("../services/posts");
 const { getOnePage } = require('../services/pages');
-const { delKey, delKeyWithPattern } = require('../utils/redis');
+const { delKey, delKeyWithPattern, setKeyWithExpiry } = require('../utils/redis');
+const {
+  updatePostStatus,
+  textPostToFbPageFeed,
+  singleImagePostToFbPageFeed,
+  multipleImagePostToFbPageFeed,
+  videoPostToFbPageFeed,
+  reelPostToFbPageFeed,
+  storyVideoToFbPageFeed,
+  storyImageToFbPageFeed, updatePostToDb
+} = require('../services/facebookService');
+const { getOnePostById } = require('../services/posts');
 
 /**
  * Retrieves a single post from the database.
@@ -144,7 +155,6 @@ exports.getPostsByPageIdIntervals = async (req, res) => {
  * @param {Object} res - The response object.
  * @returns {Promise<void>}
  */
-
 exports.deletePostById = async (req, res) => {
   try {
     // Get the post ID from the request parameters
@@ -173,6 +183,83 @@ exports.deletePostById = async (req, res) => {
     res
       .status(200)
       .json({ success: true, message: "Post Deleted Successfully" });
+  }
+  catch (error) {
+    // Return an error response with details
+    res.status(500).json({
+      success: false,
+      error: { message: "Something went wrong", reason: error.message },
+    });
+  }
+};
+
+exports.approvePost = async (req, res) => {
+
+  try {
+    // Get the post ID from the request body
+
+    const { postId, pageId, postType, shouldSchedule, scheduledSeconds } = req.body
+
+    // Check if the post ID is missing
+    if (!postId || !pageId) {
+      return res.status(500).json({ error: "Missing required parameters" });
+    }
+
+    const getPageById = await getOnePage(pageId)
+
+    const { pageToken } = getPageById
+
+    if (!pageToken) {
+      return res.status(400).json({ error: "Cannot find page" });
+    }
+
+    if (shouldSchedule && scheduledSeconds) {
+      await setKeyWithExpiry(`${ postType }:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduledSeconds)
+    }
+    else {
+
+      const status = await updatePostToDb(postId, { isApproved: true })
+
+      await setKeyWithExpiry(`${ postType }:${ pageId }:${ postId }:${ pageToken }`, 'some value', 5)
+    }
+
+
+    // Return a success response
+    return res
+      .status(200)
+      .json({ success: true, message: "Post Approved Successfully" });
+  }
+  catch (error) {
+    // Return an error response with details
+    res.status(500).json({
+      success: false,
+      error: { message: "Something went wrong", reason: error.message },
+    });
+  }
+};
+
+exports.rejectPost = async (req, res) => {
+  try {
+    // Get the post ID from the request parameters
+    const postId = req.params.id;
+
+    // Check if the post ID is missing
+    if (!postId) {
+      return res.status(500).json({ error: "Missing required parameters" });
+    }
+    const rejectedPost = await updatePostStatus(postId, 'rejected');
+
+    // Check if the post is not found
+    if (!rejectedPost) {
+      return res
+        .status(200)
+        .json({ success: false, message: "Post Not Found" });
+    }
+
+    // Return a success response
+    res
+      .status(200)
+      .json({ success: true, message: "Post Rejected Successfully" });
   }
   catch (error) {
     // Return an error response with details

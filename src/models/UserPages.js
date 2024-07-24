@@ -49,6 +49,12 @@ module.exports = (sequelize, DataTypes) => {
       required: true,
       primaryKey: false
     },
+    status: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      required: true,
+      primaryKey: false
+    },
   });
 
   return UserPages;

@@ -9,9 +9,10 @@ const { getOneUser } = require("./users");
  * @param {string} userId - The ID of the user.
  * @param {string} role - The role of the user in the page.
  * @param {string} pageId - The ID of the page.
+ * @param {string} status - The status of the page.
  * @returns {Promise<Object>} - A promise that resolves to the created page object.
  */
-exports.addUserPage = async (userId, role, pageId) => {
+exports.addUserPage = async (userId, role, pageId, status = 'accepted') => {
 
   const user = await getOneUser(userId)
 
@@ -25,11 +26,12 @@ exports.addUserPage = async (userId, role, pageId) => {
     userId: user?.dataValues?.id,
     role,
     pageId,
-    userEmail
+    userEmail,
+    status
   }
 
   return db.UserPages.findOrCreate({
-    where: { userId: page.userId, role: page.role, pageId: page.pageId },
+    where: { userId: page.userId, role: page.role, pageId: page.pageId, status: page.status },
     defaults: page
   });
 };
@@ -79,34 +81,59 @@ exports.invite = async (email, pageId, mainUserId, role) => {
   return sendPageInvite(user, pageId, mainUserId, role);
 };
 
-async function sendPageInvite(user, pageId, mainUserId, role) {
+async function sendPageInvite(user, pageId, mainUserId, role, status = 'pending') {
 
-  const transporter = await nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: emailService.user,
-      pass: emailService.pass,
-    },
-  });
+  const page = await exports.addUserPage(user.id, role === '1' ? 'maintainer' : 'editor', pageId, status)
 
-  const inviteLink = `${ hostname }/invitation/${ user.id }/${ pageId }/${ mainUserId }/${ role }`;
-
-  const mailOptions = {
-    from: emailService.from,
-    to: user.email,
-    subject: "Password Reset Request",
-    text: `Click on this link to accept invite: ${ inviteLink }`,
-  };
-
-  return transporter
-    .sendMail(mailOptions)
-    .then((r) => {
-      console.log("Email sent:", r);
-      return true;
-    })
-    .catch((err) => {
-      console.log("Email failed:", err.message);
-      return false;
+  if (Array.isArray(page) && page.length && page[1]) {
+    const transporter = await nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: emailService.user,
+        pass: emailService.pass,
+      },
     });
+
+    const inviteLink = `${ hostname }/invitation/${ page[0]?.dataValues?.id }`;
+
+    const mailOptions = {
+      from: emailService.from,
+      to: user.email,
+      subject: "Page Accept Invite",
+      text: `Click on this link to accept invite: ${ inviteLink }`,
+    };
+
+    return transporter
+      .sendMail(mailOptions)
+      .then((r) => {
+        console.log("Email sent:", r);
+        return true;
+      })
+      .catch((err) => {
+        console.log("Email failed:", err.message);
+        return false;
+      });
+  }
+  else {
+    console.log('error while creating page in db')
+    return 'Page Already Exists'
+  }
+
+
 }
 
+/**
+ * Updates a page in the UserChannels table.
+ * @param {string} pageId - The ID of the page.
+ * @param {Object} updateData - The data to update the page with.
+ * @param {string} updateData.status - The status of the user in the page.
+ * @returns {Promise<Object|null>} - A promise that resolves to the updated page object or null if not found.
+ */
+exports.updateUserChannelStatus = async (pageId, { status, u }) => {
+  const channel = await db.UserPages.findByPk(pageId);
+  if (!channel) {
+    return null;
+  }
+  await channel.update({ status });
+  return channel;
+};

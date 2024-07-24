@@ -19,7 +19,7 @@ router.get("/facebook", ((req, res, next) => {
 
 }));
 
-const appUrlRdirect = appURL + "/publish";
+const appUrlRdirect = appURL + "/publish/all";
 
 // Handle the callback from Facebook
 // If authentication is successful, redirect to the main page

@@ -18,4 +18,7 @@ router.delete("/:id", auth, userPageController.deletePage);
 
 router.post("/invite", userPageController.invite);
 
+// PUT /userPages/status/:id - Updates a user Page status by its ID
+router.put("/status/:id", auth, userPageController.updatePageStatus);
+
 module.exports = router;

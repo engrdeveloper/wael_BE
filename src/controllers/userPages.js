@@ -11,7 +11,7 @@ const { getOneUser } = require('../services/users')
 exports.addPage = async (req, res) => {
   try {
     // Get the page data from the request body
-    const { userId, role, pageId } = req.body;
+    const { userId, role, pageId, status } = req.body;
 
     // Check if any of the required fields are missing
     if (!userId || !role || !pageId) {
@@ -25,7 +25,8 @@ exports.addPage = async (req, res) => {
     const response = await userPageService.addUserPage(
       userId,
       role,
-      pageId
+      pageId,
+      status
     );
 
     if (!response) {
@@ -105,7 +106,7 @@ exports.updatePage = async (req, res) => {
     const { role } = req.body;
 
     // Check if any of the required fields are missing
-    if ( !role || !pageId) {
+    if (!role || !pageId) {
       return res.status(500).json({
         success: false,
         error: { message: "All fields are required" },
@@ -195,10 +196,10 @@ exports.invite = async (req, res) => {
     const user = await userPageService.invite(email, pageId, mainUserId, role);
 
     // If user is not found, return an error response
-    if (!user) {
+    if (!user || user === 'Page Already Exists') {
       return res
         .status(500)
-        .json({ success: false, error: { message: "Invalid Email" } });
+        .json({ success: false, error: { message: user === 'Page Already Exists' ? user : 'Error while creating Email' } });
     }
 
     // Return a success response with a message
@@ -206,6 +207,46 @@ exports.invite = async (req, res) => {
   }
   catch (error) {
     // If an error occurs, return an error response with details
+    res.status(500).json({
+      success: false,
+      error: { message: "Something went wrong", reason: error.message },
+    });
+  }
+};
+
+exports.updatePageStatus = async (req, res) => {
+  try {
+    // Get the page ID from the request parameters
+    const recordId = req.params.id;
+
+    // Get the page data from the request body
+    const { status } = req.body;
+
+    // Check if any of the required fields are missing
+    if (!status || !recordId) {
+      return res.status(500).json({
+        success: false,
+        error: { message: "All fields are required" },
+      });
+    }
+
+    // Update the page in the database
+    const updatedPage = await userPageService.updateUserChannelStatus(recordId, {
+      status
+    });
+
+    // Check if the page is not found
+    if (!updatedPage) {
+      return res
+        .status(200)
+        .json({ success: false, message: "User Page Not Found" });
+    }
+
+    // Return the updated page as a success response
+    res.status(200).json({ success: true, data: { updatedPage } });
+  }
+  catch (error) {
+    // Return an error response with details
     res.status(500).json({
       success: false,
       error: { message: "Something went wrong", reason: error.message },

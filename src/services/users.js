@@ -1,9 +1,9 @@
 const db = require("../models");
-const {Op, where} = require("sequelize");
+const { Op, where } = require("sequelize");
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const Jwt = require("jsonwebtoken");
-const {emailService, hostname} = require("../config/index");
+const { emailService, hostname } = require("../config/index");
 
 /**
  * Sends an email to the user with a password reset link.
@@ -12,33 +12,33 @@ const {emailService, hostname} = require("../config/index");
  * @returns {Promise<boolean>} - A promise that resolves to true if the email was sent successfully, false otherwise.
  */
 async function sendPasswordResetEmail(user, token) {
-    const transporter = await nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: emailService.user,
-            pass: emailService.pass,
-        },
+  const transporter = await nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: emailService.user,
+      pass: emailService.pass,
+    },
+  });
+
+  const resetLink = `${ hostname }/password-reset/${ user.id }/${ token }`;
+
+  const mailOptions = {
+    from: emailService.from,
+    to: user.email,
+    subject: "Password Reset Request",
+    text: `Click on the following link to reset your password: ${ resetLink }`,
+  };
+
+  return transporter
+    .sendMail(mailOptions)
+    .then((r) => {
+      console.log("Email sent:", r);
+      return true;
+    })
+    .catch((err) => {
+      console.log("Email failed:", err.message);
+      return false;
     });
-
-    const resetLink = `${hostname}/password-reset/${user.id}/${token}`;
-
-    const mailOptions = {
-        from: emailService.from,
-        to: user.email,
-        subject: "Password Reset Request",
-        text: `Click on the following link to reset your password: ${resetLink}`,
-    };
-
-    return transporter
-        .sendMail(mailOptions)
-        .then((r) => {
-            console.log("Email sent:", r);
-            return true;
-        })
-        .catch((err) => {
-            console.log("Email failed:", err.message);
-            return false;
-        });
 }
 
 /**
@@ -46,9 +46,9 @@ async function sendPasswordResetEmail(user, token) {
  * @param {Object} userData - The user data object containing the email and password.
  * @returns {Promise<Object>} - A promise that resolves to the created user object.
  */
-exports.addUser = async ({email, password}) => {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    return db.User.create({email, password: hashedPassword});
+exports.addUser = async ({ email, password }) => {
+  const hashedPassword = await bcrypt.hash(password, 10);
+  return db.User.create({ email, password: hashedPassword });
 };
 
 /**
@@ -57,7 +57,7 @@ exports.addUser = async ({email, password}) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the user object or null if not found.
  */
 exports.getUserByEmail = async (email) => {
-    return await db.User.findOne({where: {email: email}});
+  return await db.User.findOne({ where: { email: email } });
 };
 
 /**
@@ -66,7 +66,7 @@ exports.getUserByEmail = async (email) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the user object or null if not found.
  */
 exports.getOneUser = async (userId) => {
-    return db.User.findByPk(userId);
+  return db.User.findByPk(userId);
 };
 
 /**
@@ -77,22 +77,22 @@ exports.getOneUser = async (userId) => {
  * @param {string} [userData.password] - The new password for the user.
  * @returns {Promise<Object|null>} - A promise that resolves to the updated user object or null if not found.
  */
-exports.updateUser = async (userId, {email, password}) => {
-    const user = await db.User.findByPk(userId);
-    if (!user) {
-        return null;
-    }
+exports.updateUser = async (userId, { email, password }) => {
+  const user = await db.User.findByPk(userId);
+  if (!user) {
+    return null;
+  }
 
-    if (email) {
-        await user.update({email});
-    }
-    if (password) {
-        const hashedPassword = await bcrypt.hash(password, 10);
+  if (email) {
+    await user.update({ email });
+  }
+  if (password) {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-        await user.update({password: hashedPassword});
-    }
+    await user.update({ password: hashedPassword });
+  }
 
-    return user;
+  return user;
 };
 
 /**
@@ -101,11 +101,11 @@ exports.updateUser = async (userId, {email, password}) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the deleted user object or null if not found.
  */
 exports.deleteUserById = async (userId) => {
-    const user = await db.User.findByPk(userId);
-    if (!user) {
-        return null;
-    }
-    return user.destroy();
+  const user = await db.User.findByPk(userId);
+  if (!user) {
+    return null;
+  }
+  return user.destroy();
 };
 
 /**
@@ -115,7 +115,7 @@ exports.deleteUserById = async (userId) => {
  * @returns {Promise<Object|null>} - A promise that resolves to the user object or null if authentication fails.
  */
 exports.login = async (email, password) => {
-    return db.User.findOne({where: {email: email, password: password}});
+  return db.User.findOne({ where: { email: email, password: password } });
 };
 
 /**
@@ -124,13 +124,13 @@ exports.login = async (email, password) => {
  * @returns {Promise<Array<Object>>} - A promise that resolves to an array of user objects.
  */
 exports.getUsersByEmailPrefix = async (emailPrefix) => {
-    return db.User.findAll({
-        where: {
-            email: {
-                [Op.like]: `${emailPrefix}%`,
-            },
-        },
-    });
+  return db.User.findAll({
+    where: {
+      email: {
+        [Op.like]: `${ emailPrefix }%`,
+      },
+    },
+  });
 };
 
 /**
@@ -139,43 +139,43 @@ exports.getUsersByEmailPrefix = async (emailPrefix) => {
  * @returns {Promise<boolean>} - A promise that resolves to true if the email was sent successfully, false otherwise.
  */
 exports.forgetPass = async (email) => {
-    const user = await db.User.findOne({where: {email: email}});
-    if (!user) return null;
+  const user = await db.User.findOne({ where: { email: email } });
+  if (!user) return null;
 
-    // Send password reset email
-    const signedToken = Jwt.sign(
-        {userId: user.id, email: user.email},
-        "NODEAPI@123"
-    );
+  // Send password reset email
+  const signedToken = Jwt.sign(
+    { userId: user.id, email: user.email },
+    "NODEAPI@123"
+  );
 
-    return sendPasswordResetEmail(user, signedToken);
+  return sendPasswordResetEmail(user, signedToken);
 };
 
 exports.getPagesWithUserId = async (userId) => {
-    return db.User.findOne({
-        where: {id: userId},
-        attributes: ['id'],
-        include: [
-            {
-                model: db.Pages,
-                as: "usersPages",
-                through: {attributes: ['role']},
-                attributes: ['pageId', 'name', 'id']
-            }
-        ]
-    })
+  return db.User.findOne({
+    where: { id: userId },
+    attributes: ['id'],
+    include: [
+      {
+        model: db.Pages,
+        as: "usersPages",
+        through: { attributes: ['role', 'status'], where: { status: { [Op.ne]: 'pending' } } },
+        attributes: ['pageId', 'name', 'id']
+      }
+    ]
+  })
 };
 
 exports.getPagesWithMainUserId = async (userId) => {
-    return db.Pages.findAll({
-        where: {userId: userId},
-        attributes: ['name'],
-        include: [
-            {
-                model: db.User,
-                as: 'usersPages',
-                attributes: ['email', 'id']
-            },
-        ]
-    })
+  return db.Pages.findAll({
+    where: { userId: userId },
+    attributes: ['name'],
+    include: [
+      {
+        model: db.User,
+        as: 'usersPages',
+        attributes: ['email', 'id']
+      },
+    ]
+  })
 };

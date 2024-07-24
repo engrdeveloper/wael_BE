@@ -7,7 +7,7 @@ const {
   videoPostToFbPageFeed,
   reelPostToFbPageFeed,
   storyVideoToFbPageFeed,
-  storyImageToFbPageFeed
+  storyImageToFbPageFeed, updatePostStatus
 } = require('../services/facebookService');
 const { getOnePostById } = require('../services/posts')
 
@@ -86,29 +86,41 @@ redisEvents.on('pmessage', async (pattern, channel, message) => {
 
     const { text, imageUrls, videoUrls } = post
 
+    console.log(type)
+
     if (type === 'text') {
-      const facebookResponse = await textPostToFbPageFeed({
+      textPostToFbPageFeed({
         accessToken: pageToken,
         pageId,
         message: text,
-      });
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
 
-      console.log(facebookResponse, 'response from fb')
-
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
     }
 
     if (type === 'textWithImage') {
 
       const imageUrl = !!imageUrls ? JSON.parse(imageUrls)[0] : ''
 
-      const facebookResponse = await singleImagePostToFbPageFeed({
+      singleImagePostToFbPageFeed({
         accessToken: pageToken,
         pageId,
         imageUrl,
         caption: text,
-      });
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
 
-      console.log(facebookResponse, 'response from fb')
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
     }
 
 
@@ -116,28 +128,42 @@ redisEvents.on('pmessage', async (pattern, channel, message) => {
 
       const imageUrl = !!imageUrls ? JSON.parse(imageUrls) : ''
 
-      const facebookResponse = await multipleImagePostToFbPageFeed({
+      console.log(imageUrl, 'llllll')
+
+      multipleImagePostToFbPageFeed({
         accessToken: pageToken,
         pageId,
-        imageUrl,
+        imageUrls,
         caption: text
-      });
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
 
-      console.log(facebookResponse, 'response from fb')
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
     }
 
     if (type === 'videoFBPage') {
 
       const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
 
-      const facebookResponse = await videoPostToFbPageFeed({
+      videoPostToFbPageFeed({
         accessToken: pageToken,
         pageId,
         videoUrl,
         description: text, // The optional description for the video.
-      });
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
 
-      console.log(facebookResponse, 'response from fb')
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
     }
 
 
@@ -145,40 +171,58 @@ redisEvents.on('pmessage', async (pattern, channel, message) => {
 
       const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
 
-      const facebookResponse = await reelPostToFbPageFeed({
+      reelPostToFbPageFeed({
         accessToken: pageToken,
         pageId,
         videoUrl,
         description: text,
-      });
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
 
-      console.log(facebookResponse, 'response from fb')
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
     }
 
     if (type === 'storyVideoToPage') {
 
       const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
 
-      const facebookResponse = await storyVideoToFbPageFeed({
+      storyVideoToFbPageFeed({
         accessToken: pageToken,
         pageId,
         videoUrl,
-      });
-      console.log(facebookResponse, 'response from fb')
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
+
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
     }
 
     if (type === 'storyImageToPage') {
 
       const imageUrl = !!videoUrls ? JSON.parse(imageUrl)[0] : ''
 
-      const facebookResponse = await storyImageToFbPageFeed({
+      storyImageToFbPageFeed({
         accessToken: pageToken,
         pageId,
         imageUrl,
         caption: text,
-      });
+      }).then(async fbResp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(fbResp, 'response from fb')
 
-      console.log(facebookResponse, 'response from fb')
+      }).catch(async err => {
+        console.log(err.message)
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
     }
 
   }

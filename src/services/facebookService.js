@@ -142,6 +142,8 @@ const multipleImagePostToFbPageFeed = async ({
                                                imageUrls,
                                              }) => {
   try {
+
+    console.log(imageUrls, 'mmmmmm')
     // Get the image IDs for each image URL
     const imageIds = await Promise.all(
       imageUrls.map(async (imageUrl) => {
@@ -555,14 +557,27 @@ const updatePostToDb = async (postId, postObj) => {
     updateObj = { ...postObj, isApproved: true };
   }
 
-  if (post.status === 'sent') {
-    updateObj = { ...postObj, status: 'sent' };
+  if (post.status === 'queued') {
+    updateObj = { ...postObj, status: 'queued' };
   }
 
   return post.update({ ...postObj, ...updateObj });
 
 
 }
+
+const updatePostStatus = async (postId, status, error = null) => {
+
+  let post = await db.Posts.findByPk(postId);
+  if (!post) {
+    return null;
+  }
+
+  return post.update({ status, error });
+
+
+}
+
 
 module.exports = {
   textPostToFbPageFeed,
@@ -573,5 +588,6 @@ module.exports = {
   storyVideoToFbPageFeed,
   storyImageToFbPageFeed,
   savePostToDb,
-  updatePostToDb
+  updatePostToDb,
+  updatePostStatus
 };
