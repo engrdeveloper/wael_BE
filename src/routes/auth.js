@@ -40,14 +40,23 @@ router.get(
 
           const page = pagesData[i]
           // const longToken = await getLongLivedPageToken(page?.access_token, page?.id)
-          const channel = await addPage(page?.id, page?.access_token, page?.name, req.user.accessToken, req?.user?.userSqlId)
 
-          if(Array.isArray(channel)){
-            if(channel[1] === true){
-              const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel[0]?.dataValues.id)
+          if (page?.instagram_business_account?.id) {
+            const channel = await addPage(page?.instagram_business_account?.id, page?.access_token, page?.name, req.user.accessToken, req?.user?.userSqlId, 'instagram')
+            if (Array.isArray(channel)) {
+              if (channel[1] === true) {
+                const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel[0]?.dataValues.id)
+              }
             }
           }
 
+          const channel = await addPage(page?.id, page?.access_token, page?.name, req.user.accessToken, req?.user?.userSqlId, 'facebook')
+
+          if (Array.isArray(channel)) {
+            if (channel[1] === true) {
+              const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel[0]?.dataValues.id)
+            }
+          }
 
         }
 
@@ -67,7 +76,17 @@ router.get(
 );
 
 // Initiate the twitter authentication process
-router.get("/twitter", passport.authenticate("twitter"));
+router.get("/twitter", ((req, res, next) => {
+
+  const user = req.query.myVar
+
+  console.log(user)
+
+  passport.authenticate("twitter", {
+    state: user
+  })(req, res, next)
+
+}));
 
 // Handle the callback from twitter
 // If authentication is successful, redirect to the main page
@@ -75,15 +94,27 @@ router.get("/twitter", passport.authenticate("twitter"));
 router.get(
   "/twitter/callback",
   passport.authenticate("twitter"),
-  (req, res) => {
+  async (req, res) => {
     const profile = req.user;
-    res.send({
-      id: profile.id,
-      username: profile.username,
-      displayName: profile.displayName,
-      token: profile.token,
-      tokenSecret: profile.tokenSecret,
-    });
+
+    const channel = await addPage(profile?.id, `${profile?.access_token}@${profile?.tokenSecret}`, profile.displayName, req.user.accessToken, req?.user?.userSqlId, 'twitter')
+
+    if (Array.isArray(channel)) {
+      if (channel[1] === true) {
+        const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel[0]?.dataValues.id)
+      }
+    }
+
+    res.redirect(appUrlRdirect);
+
+
+    // res.send({
+    //   id: profile.id,
+    //   username: profile.username,
+    //   displayName: profile.displayName,
+    //   token: profile.token,
+    //   tokenSecret: profile.tokenSecret,
+    // });
   }
 );
 

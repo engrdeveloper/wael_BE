@@ -54,6 +54,8 @@ exports.handleUserFacebookLoginSuccess = async (userData) => {
       },
     });
 
+    console.log(response.data)
+
     // The response.data contains an array of objects, each representing a page.
     const pagesData = response.data;
 

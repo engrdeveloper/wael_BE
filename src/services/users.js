@@ -160,7 +160,7 @@ exports.getPagesWithUserId = async (userId) => {
         model: db.Pages,
         as: "usersPages",
         through: { attributes: ['role', 'status'], where: { status: { [Op.ne]: 'pending' } } },
-        attributes: ['pageId', 'name', 'id']
+        attributes: ['pageId', 'name', 'id', 'channel']
       }
     ]
   })

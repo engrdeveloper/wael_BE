@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const instagramController = require("../controllers/instagram");
+const instagramController = require("../controllers/mainInstagram");
 
 //  Link for whole documentation
 // https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/content-publishing#content-publishing

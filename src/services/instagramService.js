@@ -1,5 +1,10 @@
 const axios = require("axios");
 
+const handleError = (error) => {
+  console.log("Error while posting to insta", error);
+  throw new Error(error);
+};
+
 /**
  * Posts an image to an Instagram account.
  *
@@ -13,17 +18,20 @@ const axios = require("axios");
  * @throws {Error} - If there is an error while posting to Instagram.
  */
 exports.postImageToInstagramAccount = async ({
-  igUserId,
-  accessToken,
-  imageUrl,
-  caption = "",
-  mediaTypeStory,
-}) => {
+                                               igUserId,
+                                               accessToken,
+                                               imageUrl,
+                                               caption = "",
+                                               mediaTypeStory = false,
+                                             }) => {
   try {
+
+    console.log(igUserId)
+
     // Construct the URL for the API request to create container for image uploading
     let apiUrl =
-      `https://graph.facebook.com/v20.0/${igUserId}/media?` +
-      `image_url=${imageUrl}&caption=${caption}&access_token=${accessToken}`;
+      `https://graph.facebook.com/v20.0/${ igUserId }/media?` +
+      `image_url=${ imageUrl }&caption=${ caption }&access_token=${ accessToken }`;
 
     // If mediaTypeStory is true, add the media_type=STORIES parameter
     if (mediaTypeStory) {
@@ -31,19 +39,22 @@ exports.postImageToInstagramAccount = async ({
     }
 
     // Make a POST request to the Instagram API to post the image
-    const { data } = await axios.post(apiUrl);
+    const { data } = await axios.post(apiUrl).catch(err => {
+      console.log(err)
+    });
     // call the api to post to instagram account
 
     const { id } = data;
-    const url = `https://graph.facebook.com/v20.0/${igUserId}/media_publish?creation_id=${id}&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v20.0/${ igUserId }/media_publish?creation_id=${ id }&access_token=${ accessToken }`;
 
     const response = await axios.post(url);
 
     // Return the response data from the Instagram API
     return response.data;
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
-    return { error: error.message };
+    handleError(error);
   }
 };
 
@@ -58,16 +69,16 @@ exports.postImageToInstagramAccount = async ({
  * @throws {Error} - If there is an error while posting to Instagram.
  */
 exports.postCarouselToInstagramAccount = async ({
-  igUserId,
-  accessToken,
-  mediaItems,
-  caption = "",
-}) => {
+                                                  igUserId,
+                                                  accessToken,
+                                                  mediaItems,
+                                                  caption = "",
+                                                }) => {
   try {
     // Step 1: Create carousel items
     const itemIds = [];
     for (const media of mediaItems) {
-      const url = `https://graph.facebook.com/v20.0/${igUserId}/media`;
+      const url = `https://graph.facebook.com/v20.0/${ igUserId }/media`;
       let params = {
         is_carousel_item: true,
         access_token: accessToken,
@@ -84,7 +95,8 @@ exports.postCarouselToInstagramAccount = async ({
         console.log("url", media.imageUrl);
 
         data = imageUploadResponse?.data;
-      } else if (media.type === "video") {
+      }
+      else if (media.type === "video") {
         console.log("url", media.videoUrl);
         data = await initializeUploadVideoToIg(
           igUserId,
@@ -96,7 +108,7 @@ exports.postCarouselToInstagramAccount = async ({
         await uploadVideoFromURL(data?.uri, media.videoUrl, accessToken);
       }
 
-      // check media sstatus
+      // check media status
       const mediaStatus = await checkUploadedmediaStatus(data.id, accessToken);
       console.log("mediaStatus", mediaStatus);
 
@@ -106,25 +118,26 @@ exports.postCarouselToInstagramAccount = async ({
 
     // Step 2: Create carousel container
     const carouselApiUrl =
-      `https://graph.facebook.com/v20.0/${igUserId}/media?` +
-      `caption=${encodeURIComponent(
+      `https://graph.facebook.com/v20.0/${ igUserId }/media?` +
+      `caption=${ encodeURIComponent(
         caption
-      )}&media_type=CAROUSEL&children=${encodeURIComponent(
+      ) }&media_type=CAROUSEL&children=${ encodeURIComponent(
         itemIds
-      )}&access_token=${accessToken}`;
+      ) }&access_token=${ accessToken }`;
 
     const { data: carouselData } = await axios.post(carouselApiUrl);
     const creationId = carouselData.id;
 
     // Step 3: Publish carousel
     const publishUrl =
-      `https://graph.facebook.com/v20.0/${igUserId}/media_publish?` +
-      `creation_id=${creationId}&access_token=${accessToken}`;
+      `https://graph.facebook.com/v20.0/${ igUserId }/media_publish?` +
+      `creation_id=${ creationId }&access_token=${ accessToken }`;
 
     const { data: publishData } = await axios.post(publishUrl);
 
     return publishData;
-  } catch (error) {
+  }
+  catch (error) {
     console.error("Error posting carousel to Instagram:", error?.response);
     throw new Error("Failed to post carousel to Instagram");
   }
@@ -142,12 +155,13 @@ const checkUploadedmediaStatus = async (mediaId, accessToken) => {
   try {
     // Make a GET request to fetch the status of the media item
     const response = await axios.get(
-      `https://graph.facebook.com/v20.0/${mediaId}?fields=status_code,status&access_token=${accessToken}`
+      `https://graph.facebook.com/v20.0/${ mediaId }?fields=status_code,status&access_token=${ accessToken }`
     );
 
     // Return the response data from the Instagram API.
     return response.data;
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, throw an error.
     throw new Error(error);
   }
@@ -173,7 +187,7 @@ const initializeUploadVideoToIg = async (
   caption = "",
   is_carousel_item = false
 ) => {
-  const url = `https://graph.facebook.com/v20.0/${igUserId}/media`;
+  const url = `https://graph.facebook.com/v20.0/${ igUserId }/media`;
   const params = {
     access_token: accessToken,
     media_type,
@@ -184,10 +198,12 @@ const initializeUploadVideoToIg = async (
   try {
     const response = await axios.post(url, null, { params });
     return response.data;
-  } catch (error) {
+  }
+  catch (error) {
     throw new Error(error);
   }
 };
+
 /**
  * Uploads a video from a URL to Instagram using the Instagram Graph API.
  *
@@ -205,7 +221,7 @@ const uploadVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
       url: uploadUrl,
       headers: {
         // Set the Authorization header with the page access token
-        Authorization: `OAuth ${pageAccessToken}`,
+        Authorization: `OAuth ${ pageAccessToken }`,
         // Set the file_url header with the URL of the video to be uploaded
         file_url: videoUrl,
       },
@@ -216,7 +232,8 @@ const uploadVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
 
     // Return the response data from the Instagram API.
     return response?.data;
-  } catch (error) {
+  }
+  catch (error) {
     // Handle any errors that occur while uploading the video.
     console.error("Error uploading video from URL:", error);
     throw error;
@@ -235,12 +252,12 @@ const uploadVideoFromURL = async (uploadUrl, videoUrl, pageAccessToken) => {
  * @throws {Error} - If there is an error while posting the video.
  */
 exports.postVideoToInstagramAccount = async ({
-  media_type = "REELS",
-  igUserId,
-  accessToken,
-  videoUrl,
-  caption = "",
-}) => {
+                                               media_type = "REELS",
+                                               igUserId,
+                                               accessToken,
+                                               videoUrl,
+                                               caption = "",
+                                             }) => {
   try {
     // Initialize the video upload session
     const data = await initializeUploadVideoToIg(
@@ -265,14 +282,15 @@ exports.postVideoToInstagramAccount = async ({
     console.log("mediaStatus", mediaStatus);
 
     // Call the API to publish the video
-    const url = `https://graph.facebook.com/v20.0/${igUserId}/media_publish?creation_id=${id}&access_token=${accessToken}`;
+    const url = `https://graph.facebook.com/v20.0/${ igUserId }/media_publish?creation_id=${ id }&access_token=${ accessToken }`;
 
     const response = await axios.post(url);
 
     // Return the response data from the Instagram API
     return response.data;
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
-    return { error: error.message };
+    handleError(error)
   }
 };

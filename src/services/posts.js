@@ -47,7 +47,29 @@ exports.getPostsByPageId = async (pageId, status, page = 1) => {
 
 };
 
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${ year }-${ month }-${ day }`;
+}
+
+function getTodayAnd7thDate() {
+  const today = new Date();
+
+  // Calculate the date 7 days from today
+  const seventhDay = new Date(today);
+  seventhDay.setDate(today.getDate() + 7);
+
+  return {
+    today: formatDate(today),
+    seventhDay: formatDate(seventhDay)
+  };
+}
+
 const groupByDay = async (pageId) => {
+
+  const dates = getTodayAnd7thDate();
 
   const query = `
   SELECT
@@ -81,7 +103,7 @@ const groupByDay = async (pageId) => {
     day ASC;
 `;
   return db.sequelize.query(query, {
-    replacements: { pageId, startDate: '2024-07-21', endDate: '2024-07-25' },
+    replacements: { pageId, startDate: dates?.today, endDate: dates?.seventhDay },
     type: db.sequelize.QueryTypes.SELECT
   });
 

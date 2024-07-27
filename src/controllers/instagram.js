@@ -20,6 +20,8 @@ exports.postImageToInstagram = async (req, res) => {
     // caption: The optional caption for the image (default: "").
     const { accessToken, imageUrl, igUserId, caption = "" } = req.body;
 
+    console.log(req.body)
+
     // If any of the required parameters are missing, return a bad request response
     if (!accessToken || !imageUrl || !igUserId) {
       return res.status(400).json({ error: "Missing required parameters" });

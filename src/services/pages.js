@@ -7,10 +7,11 @@ const db = require("../models");
  * @param {string} name - The name of page.
  * @param {string} userToken - The user token to access all pages.
  * @param {string} userId - The user token to access all pages.
+ * @param {string} channel - The channel of pages.
  * @returns {Promise<Object>} - A promise that resolves to the created page object.
  */
-exports.addPage = async (pageId, pageToken, name, userToken, userId) => {
-  return db.Pages.findOrCreate({ where: { pageId }, defaults:{ pageToken, name, userToken, userId} });
+exports.addPage = async (pageId, pageToken, name, userToken, userId, channel) => {
+  return db.Pages.findOrCreate({ where: { pageId }, defaults: { pageToken, name, userToken, userId, channel } });
 };
 
 /**

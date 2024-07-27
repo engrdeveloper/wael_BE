@@ -51,13 +51,13 @@ const twitterApiClient = (accessToken, accessTokenSecret) => {
  * @return {string} OAuth header.
  */
 const generateOAuthHeader = ({
-  consumerKey,
-  consumerSecret,
-  accessToken,
-  accessTokenSecret,
-  method,
-  url,
-}) => {
+                               consumerKey,
+                               consumerSecret,
+                               accessToken,
+                               accessTokenSecret,
+                               method,
+                               url,
+                             }) => {
   // Generate the random nonce and timestamp
   const oauthTimestamp = Math.floor(Date.now() / 1000);
   const oauthNonce = uuidv4();
@@ -85,21 +85,22 @@ const generateOAuthHeader = ({
     const encodedValue = encodeURIComponent(ordered[k]);
     const encodedKey = encodeURIComponent(k);
     if (encodedParameters === "") {
-      encodedParameters += `${encodedKey}=${encodedValue}`;
-    } else {
-      encodedParameters += `&${encodedKey}=${encodedValue}`;
+      encodedParameters += `${ encodedKey }=${ encodedValue }`;
+    }
+    else {
+      encodedParameters += `&${ encodedKey }=${ encodedValue }`;
     }
   }
 
   // Construct the signature base string
   const encodedUrl = encodeURIComponent(url);
   const encodedParams = encodeURIComponent(encodedParameters);
-  const signatureBaseString = `${method.toUpperCase()}&${encodedUrl}&${encodedParams}`;
+  const signatureBaseString = `${ method.toUpperCase() }&${ encodedUrl }&${ encodedParams }`;
 
   // Generate the OAuth signature
-  const signingKey = `${encodeURIComponent(
+  const signingKey = `${ encodeURIComponent(
     consumerSecret
-  )}&${encodeURIComponent(accessTokenSecret)}`;
+  ) }&${ encodeURIComponent(accessTokenSecret) }`;
   const oauthSignature = crypto
     .createHmac("sha1", signingKey)
     .update(signatureBaseString)
@@ -107,7 +108,7 @@ const generateOAuthHeader = ({
   const encodedOAuthSignature = encodeURIComponent(oauthSignature);
 
   // Construct the OAuth header
-  const authHeader = `OAuth oauth_consumer_key="${parameters.oauth_consumer_key}",oauth_token="${parameters.oauth_token}",oauth_signature_method="HMAC-SHA1",oauth_timestamp="${parameters.oauth_timestamp}",oauth_nonce="${parameters.oauth_nonce}",oauth_version="1.0",oauth_signature="${encodedOAuthSignature}"`;
+  const authHeader = `OAuth oauth_consumer_key="${ parameters.oauth_consumer_key }",oauth_token="${ parameters.oauth_token }",oauth_signature_method="HMAC-SHA1",oauth_timestamp="${ parameters.oauth_timestamp }",oauth_nonce="${ parameters.oauth_nonce }",oauth_version="1.0",oauth_signature="${ encodedOAuthSignature }"`;
 
   return authHeader;
 };
@@ -137,7 +138,8 @@ exports.postTextTweetToTwitter = async (req, res) => {
 
     // Send the response
     res.status(200).json({ success: true, data: response.data });
-  } catch (error) {
+  }
+  catch (error) {
     // Log the error and send the error response
     res
       .status(500)
@@ -185,7 +187,8 @@ async function ensureDirectoryExists(directory) {
       // If there is an error, reject the Promise with the error
       if (err) {
         reject(err);
-      } else {
+      }
+      else {
         // If the directory is created successfully, resolve the Promise
         resolve();
       }
@@ -236,7 +239,8 @@ exports.postImageTweetToTwitter = async (req, res) => {
 
     // Send the response
     res.status(200).json({ success: true, data: response.data });
-  } catch (error) {
+  }
+  catch (error) {
     // Log the error and send the error response
     res
       .status(500)
@@ -284,7 +288,8 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
           // Upload the image to Twitter and get the media ID
           const mediaId = await client.v1.uploadMedia(filePath);
           return mediaId;
-        } else {
+        }
+        else {
           // Set the file path for the downloaded image
           const filePath = path.resolve(assetsPath, "twitter_video.mp4");
           // Download the image from the provided URL
@@ -306,7 +311,8 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
 
     // Send the response
     res.status(200).json({ success: true, data: response.data });
-  } catch (error) {
+  }
+  catch (error) {
     // Log the error and send the error response
     res
       .status(500)
@@ -356,7 +362,8 @@ exports.postVideoTweetToTwitter = async (req, res) => {
 
     // Send the response
     res.status(200).json({ success: true, data: response.data });
-  } catch (error) {
+  }
+  catch (error) {
     // Log the error and send the error response
     res
       .status(500)
