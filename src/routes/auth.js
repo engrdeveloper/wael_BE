@@ -7,6 +7,9 @@ const axios = require("axios");
 const { handleUserFacebookLoginSuccess, getLongLivedPageToken } = require("../controllers/facebook");
 const { addPage } = require('../services/pages')
 const { addUserPage } = require('../services/userPages')
+const axiosRetry = require("axios-retry").default;
+axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
+
 // Initiate the Facebook authentication process
 
 router.get("/facebook", ((req, res, next) => {
