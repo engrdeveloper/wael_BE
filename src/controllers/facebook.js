@@ -8,12 +8,12 @@ const {
   storyVideoToFbPageFeed,
   storyImageToFbPageFeed,
   savePostToDb,
-  updatePostToDb, updatePostStatus
+  updatePostToDb,
+  updatePostStatus,
 } = require("../services/facebookService");
-const { getOnePage } = require('../services/pages')
-const { setKeyWithExpiry, delKey } = require('../utils/redis')
-const moment = require('moment');
-
+const { getOnePage } = require("../services/pages");
+const { setKeyWithExpiry, delKey } = require("../utils/redis");
+const moment = require("moment");
 
 /**
  * Retrieves a long-lived page access token from Facebook's Graph API.
@@ -24,7 +24,7 @@ const moment = require('moment');
  */
 exports.getLongLivedPageToken = async (longLivedUserToken, pageId) => {
   // Construct the URL for the Graph API request.
-  const url = `https://graph.facebook.com/${ pageId }?fields=access_token&access_token=${ longLivedUserToken }`;
+  const url = `https://graph.facebook.com/${pageId}?fields=access_token&access_token=${longLivedUserToken}`;
 
   // Send a GET request to the Graph API and retrieve the page access token.
   const response = await axios.get(url);
@@ -54,18 +54,42 @@ exports.handleUserFacebookLoginSuccess = async (userData) => {
       },
     });
 
-    console.log(response.data)
+    console.log(response.data);
 
     // The response.data contains an array of objects, each representing a page.
-    const pagesData = response.data;
+    const pagesData = response.data.data;
 
-    // TODO: Handle saving the user data from here.
-    // TODO: Save each page data to the database or any custom logic.
+    // Array to store pages data along with Instagram account details
+    const pagesWithInstagramDetails = [];
 
-    // Return the array of page data.
-    return pagesData.data;
-  }
-  catch (err) {
+    // Loop through each page to fetch Instagram account details
+    for (const page of pagesData) {
+      if (page?.instagram_business_account) {
+        // Fetch Instagram account details using the Instagram Graph API
+        const instagramResponse = await axios.get(
+          `https://graph.facebook.com/${page.instagram_business_account.id}`,
+          {
+            params: {
+              access_token: accessToken,
+              fields: "id,username,name",
+            },
+            headers: {
+              Accept: "application/json",
+            },
+          }
+        );
+
+        // Add Instagram account details to the page object
+        page.instagram_business_account.details = instagramResponse.data;
+      }
+
+      // Add the page (with or without Instagram details) to the final array
+      pagesWithInstagramDetails.push(page);
+    }
+
+    // Return the array of page data with Instagram details.
+    return pagesWithInstagramDetails;
+  } catch (err) {
     // Log any errors that occur while handling the Facebook login.
     console.log("Error while handling facebook login", err);
   }
@@ -79,9 +103,7 @@ exports.handleUserFacebookLoginSuccess = async (userData) => {
  * @returns {Object} - Return the response from the facebook API
  */
 exports.textPostToPageFeed = async (req, res) => {
-
   try {
-
     // Extract the required parameters from the request body
     const {
       pageId,
@@ -93,7 +115,7 @@ exports.textPostToPageFeed = async (req, res) => {
       postId: editId,
       isApproved,
       status,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -101,83 +123,96 @@ exports.textPostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
     if (editId) {
-
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`text:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`text:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`text:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `text:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-
-    else {
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
-        await setKeyWithExpiry(`text:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `text:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       // Post the text to the Facebook page's feed
       if (!draft && !shouldSchedule && isApproved) {
-
-       return textPostToFbPageFeed({
+        return textPostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           message: postText,
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-          return res.status(200).json({ success: true, data: { fbResp } });
-
-        }).catch(async err => {
-          console.log(err.message)
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
         })
-
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            console.log(err.message);
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
-
     }
 
     return res.status(200).json({ success: true });
-
-
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -204,7 +239,7 @@ exports.singleImagePostToPageFeed = async (req, res) => {
       scheduleDate,
       postId: editId,
       isApproved,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -212,58 +247,69 @@ exports.singleImagePostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
     if (editId) {
-
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: caption,
-        type: 'post',
+        type: "post",
         isApproved: isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        !draft &&
+        update.dataValues.isApproved
+      ) {
+        await delKey(`textWithImage:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`textWithImage:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`textWithImage:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `textWithImage:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-
-    else {
-
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: caption,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
-        await setKeyWithExpiry(`textWithImage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `textWithImage:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       if (!draft && !shouldSchedule && isApproved) {
@@ -273,24 +319,27 @@ exports.singleImagePostToPageFeed = async (req, res) => {
           pageId,
           imageUrl,
           caption,
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-
-          return res.status(200).json({ success: true, data: { fbResp } });
-
-        }).catch(async err => {
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
         })
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
 
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
-
     }
 
     return res.status(200).json({ success: true });
-
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -304,7 +353,6 @@ exports.singleImagePostToPageFeed = async (req, res) => {
  * @returns {Object} - Return the response from the facebook API.
  */
 exports.multipleImagePostToPageFeed = async (req, res) => {
-
   try {
     // Extract the required parameters from the request body
     const {
@@ -318,7 +366,7 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
       scheduleDate,
       postId: editId,
       isApproved,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -326,81 +374,97 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
     if (editId) {
-
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        !draft &&
+        update.dataValues.isApproved
+      ) {
+        await delKey(`textWithMultipleImage:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`textWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`textWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `textWithMultipleImage:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-    else {
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
-        await setKeyWithExpiry(`textWithMultipleImage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `textWithMultipleImage:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       if (!draft && !shouldSchedule && isApproved) {
-
         return multipleImagePostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           imageUrls,
-          caption: postText
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-          return res.status(200).json({ success: true, data: { fbResp } });
-
-        }).catch(async err => {
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
-
-        });
-
+          caption: postText,
+        })
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
     }
 
     res.status(200).json({ success: true });
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -414,7 +478,6 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
  * @returns {Object} - Return the response from the facebook API
  */
 exports.videoPostToPageFeed = async (req, res) => {
-
   try {
     // Extract the required parameters from the request body
     const {
@@ -428,7 +491,7 @@ exports.videoPostToPageFeed = async (req, res) => {
       scheduleDate,
       postId: editId,
       isApproved,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -436,81 +499,98 @@ exports.videoPostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
     if (editId) {
-
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`videoFBPage:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`videoFBPage:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`videoFBPage:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `videoFBPage:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-    else {
-
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'post',
+        type: "post",
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
-        await setKeyWithExpiry(`videoFBPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `videoFBPage:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       if (!draft && !shouldSchedule && isApproved) {
-
         // Post the video to the Facebook page's feed
         return videoPostToFbPageFeed({
           accessToken: pageToken,
           pageId,
           videoUrl,
           description: postText, // The optional description for the video.
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-          return res.status(200).json({ success: true, data: { fbResp } });
-        }).catch(async err => {
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
         })
-
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
     }
 
     res.status(200).json({ success: true });
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -537,7 +617,7 @@ exports.reelPostToPageFeed = async (req, res) => {
       scheduleDate,
       postId: editId,
       isApproved,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -545,61 +625,72 @@ exports.reelPostToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
     if (editId) {
-
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'reel',
+        type: "reel",
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`reelToPage:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`reelToPage:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`reelToPage:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
-
+        await setKeyWithExpiry(
+          `reelToPage:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-    else {
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: postText,
-        type: 'reel',
+        type: "reel",
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && isApproved && !draft) {
-        await setKeyWithExpiry(`reelToPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `reelToPage:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       if (!draft && !shouldSchedule && isApproved) {
-
         // Post the reels video to the Facebook page's feed
         // The description is an optional field for the video
         return reelPostToFbPageFeed({
@@ -607,21 +698,26 @@ exports.reelPostToPageFeed = async (req, res) => {
           pageId,
           videoUrl,
           description: postText,
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-          return res.status(200).json({ success: true, data: { fbResp } });
-        }).catch(async err => {
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
         })
-
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
     }
 
-
     res.status(200).json({ success: true });
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -635,7 +731,6 @@ exports.reelPostToPageFeed = async (req, res) => {
  * @returns {Object} - Return the response from the Facebook API
  */
 exports.storyVideoToPageFeed = async (req, res) => {
-
   try {
     // Extract the required parameters from the request body
     const {
@@ -648,7 +743,7 @@ exports.storyVideoToPageFeed = async (req, res) => {
       scheduleDate,
       postId: editId,
       isApproved,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -656,9 +751,9 @@ exports.storyVideoToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
@@ -666,45 +761,59 @@ exports.storyVideoToPageFeed = async (req, res) => {
 
     if (editId) {
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: null,
-        type: 'story',
+        type: "story",
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`storyVideoToPage:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`storyVideoToPage:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`storyVideoToPage:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `storyVideoToPage:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-    else {
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: null,
-        type: 'story',
+        type: "story",
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
-        await setKeyWithExpiry(`storyVideoToPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `storyVideoToPage:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       if (!draft && !shouldSchedule && isApproved) {
@@ -715,23 +824,26 @@ exports.storyVideoToPageFeed = async (req, res) => {
           accessToken: pageToken,
           pageId,
           videoUrl,
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-          return res.status(200).json({ success: true, data: { fbResp } });
-        }).catch(async err => {
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
-
         })
-
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
     }
 
     return res.status(200).json({ success: true });
-
-
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -745,9 +857,7 @@ exports.storyVideoToPageFeed = async (req, res) => {
  * @returns {Object} - Return the response from the Facebook API
  */
 exports.storyImageToPageFeed = async (req, res) => {
-
   try {
-
     // Extract the required parameters from the request body
     const {
       pageId,
@@ -760,7 +870,7 @@ exports.storyImageToPageFeed = async (req, res) => {
       scheduleDate,
       postId: editId,
       isApproved,
-      postType
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
@@ -768,58 +878,69 @@ exports.storyImageToPageFeed = async (req, res) => {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    const getPageById = await getOnePage(pageId)
+    const getPageById = await getOnePage(pageId);
 
-    const { pageToken } = getPageById
+    const { pageToken } = getPageById;
 
     if (!pageToken) {
       return res.status(400).json({ error: "Cannot find page" });
     }
 
     if (editId) {
-
       const update = await updatePostToDb(editId, {
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: caption,
-        type: 'story',
+        type: "story",
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
-      })
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-      if (shouldSchedule && scheduleTimeSecs && update.dataValues.isApproved && !draft) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`storyImageToPage:${pageId}:${editId}:${pageToken}`);
 
-        await delKey(`storyImageToPage:${ pageId }:${ editId }:${ pageToken }`)
-
-        await setKeyWithExpiry(`storyImageToPage:${ pageId }:${ editId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `storyImageToPage:${pageId}:${editId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
-
-    }
-
-    else {
-
+    } else {
       //save post to DB
       const addPostToDB = await savePostToDb({
-        channel: 'facebook',
+        channel: "facebook",
         pageId,
         text: caption,
-        type: 'story',
+        type: "story",
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: shouldSchedule
+          ? scheduleDate
+          : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
-      })
+        postType,
+      });
 
-      const postId = addPostToDB?.dataValues.id
+      const postId = addPostToDB?.dataValues.id;
 
       if (shouldSchedule && scheduleTimeSecs && isApproved && !draft) {
-        await setKeyWithExpiry(`storyImageToPage:${ pageId }:${ postId }:${ pageToken }`, 'some value', scheduleTimeSecs)
+        await setKeyWithExpiry(
+          `storyImageToPage:${pageId}:${postId}:${pageToken}`,
+          "some value",
+          scheduleTimeSecs
+        );
       }
 
       if (!draft && !shouldSchedule && isApproved) {
@@ -831,22 +952,26 @@ exports.storyImageToPageFeed = async (req, res) => {
           pageId,
           imageUrl,
           caption,
-        }).then(async fbResp => {
-          const status = await updatePostStatus(postId, 'sent')
-          return res.status(200).json({ success: true, data: { fbResp } });
-        }).catch(async err => {
-          const status = await updatePostStatus(postId, 'not sent', err.message)
-          return res.status(500).json({ success: false, error: { message: err.message } });
-
         })
-
+          .then(async (fbResp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { fbResp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
       }
     }
 
     return res.status(200).json({ success: true });
-
-  }
-  catch (error) {
+  } catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
