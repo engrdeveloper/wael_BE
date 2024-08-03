@@ -39,7 +39,7 @@ db.Sequelize = Sequelize;
 //
 // });
 
-// db.UserPages.sync();
+// db.Pages.sync({alter: true});
 
 db.User.hasMany(db.Pages, {
   as: "mainUserPages",

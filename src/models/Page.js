@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
      * @type {string}
      */
     pageToken: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT('long'),
       allowNull: false,
       required: true,
     },
@@ -42,8 +42,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     userToken: {
       type: DataTypes.TEXT('long'),
-      allowNull: false,
-      required: true,
+      allowNull: true,
     },
     /**
      * The ID of the main user.

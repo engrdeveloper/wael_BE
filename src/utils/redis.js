@@ -19,6 +19,10 @@ const { TwitterApi } = require('twitter-api-v2');
 const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
+const {
+  postTextToPageFeed, singleImagePostToLinkedinPageFeed, multipleImagePostToLinkedinPageFeed,
+  videoPostToLinkedinPageFeed
+} = require('../services/linkedinService');
 
 const redisJSON = new Redis(redisConfig);
 const redisEvents = new Redis(redisConfig);
@@ -107,6 +111,14 @@ async function ensureDirectoryExists(directory) {
   });
 }
 
+const downloadVideo = async (videoUrl) => {
+  // Make a GET request to the video URL and set the response type to "arraybuffer"
+  const response = await axios.get(videoUrl, { responseType: "arraybuffer" });
+
+  // Convert the response data to a Buffer and return it
+  return Buffer.from(response.data, "binary");
+};
+
 // Enable key event notifications
 redisEvents.config('SET', 'notify-keyspace-events', 'Ex')
   .then(() => {
@@ -186,7 +198,7 @@ redisEvents.on('pmessage', async (pattern, channel, message) => {
       multipleImagePostToFbPageFeed({
         accessToken: pageToken,
         pageId,
-        imageUrls,
+        imageUrl,
         caption: text
       }).then(async fbResp => {
         const status = await updatePostStatus(postId, 'sent')
@@ -565,11 +577,84 @@ redisEvents.on('pmessage', async (pattern, channel, message) => {
         console.log(error.message, 'error from twitter')
 
         const status = await updatePostStatus(postId, 'not sent', error.message)
-
       }
 
     }
 
+    if (type === 'linkedinText') {
+      postTextToPageFeed(pageToken, pageId, text).then(async resp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(resp, 'response from linkedin')
+
+      }).catch(async err => {
+        console.log(err.message, 'error from linkedin')
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+    }
+
+    if (type === 'linkedinTextWithImage') {
+
+      const imageUrl = !!imageUrls ? JSON.parse(imageUrls)[0] : ''
+
+      singleImagePostToLinkedinPageFeed(
+        pageToken,
+        pageId,
+        imageUrl,
+        text
+      ).then(async resp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(resp, 'response from linkedin')
+
+      }).catch(async err => {
+        console.log(err.message, 'error from linkedin')
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
+    }
+
+    if (type === 'linkedinTextWithMultipleImage') {
+
+      const imageUrl = !!imageUrls ? JSON.parse(imageUrls) : ''
+
+      console.log(imageUrl, 'llllll')
+
+      multipleImagePostToLinkedinPageFeed(
+        pageToken,
+        pageId,
+        imageUrl,
+        text
+      ).then(async resp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(resp, 'response from linkedin')
+
+      }).catch(async err => {
+        console.log(err.message, 'error from linkedin')
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
+    }
+
+    if (type === 'linkedinVideoPage') {
+
+      const videoUrl = !!videoUrls ? JSON.parse(videoUrls)[0] : ''
+
+      const videoBuffer = await downloadVideo(videoUrl);
+
+      videoPostToLinkedinPageFeed(
+        pageToken,
+        pageId,
+        videoBuffer,
+        text
+      ).then(async resp => {
+        const status = await updatePostStatus(postId, 'sent')
+        console.log(resp, 'response from linkedin')
+
+      }).catch(async err => {
+        console.log(err.message, 'error from linkedin')
+        const status = await updatePostStatus(postId, 'not sent', err.message)
+      })
+
+    }
 
   }
   catch (e) {

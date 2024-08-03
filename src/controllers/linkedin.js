@@ -5,6 +5,14 @@ const {
   videoPostToLinkedinPageFeed,
 } = require("../services/linkedinService");
 const axios = require("axios");
+const { getOnePage } = require('../services/pages');
+const {
+  updatePostToDb,
+  savePostToDb,
+  updatePostStatus
+} = require('../services/facebookService');
+const moment = require('moment/moment');
+const { delKey, setKeyWithExpiry } = require('../utils/redis');
 
 /**
  * Handles the request to post text to a LinkedIn page's feed.
@@ -15,20 +23,112 @@ const axios = require("axios");
  */
 exports.textPostToPageFeed = async (req, res) => {
   try {
+
     // Extract the required parameters from the request body
-    const { accessToken, pageId, postText } = req.body;
+    const {
+      pageId,
+      postText,
+      draft,
+      shouldSchedule,
+      scheduleDate,
+      scheduleTimeSecs,
+      postId: editId,
+      isApproved,
+      status,
+      postType,
+    } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
-    if (!accessToken || !pageId || !postText) {
+    if (!pageId || !postText) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    // Post the postText to the page's feed
-    const response = await postTextToPageFeed(accessToken, pageId, postText);
+    const getPageById = await getOnePage(pageId);
 
-    // Return the response data from the LinkedIn API
-    res.status(200).json(response);
-  } catch (error) {
+    const { pageToken } = getPageById;
+
+    if (!pageToken) {
+      return res.status(400).json({ error: "Cannot find page" });
+    }
+
+    if (editId) {
+      const update = await updatePostToDb(editId, {
+        channel: "linkedin",
+        pageId,
+        text: postText,
+        type: "post",
+        isApproved,
+        status: status,
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
+
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`linkedinText:${ pageId }:${ editId }:${ pageToken }`);
+
+        await setKeyWithExpiry(
+          `linkedinText:${ pageId }:${ editId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+    }
+    else {
+
+      //save post to DB
+      const addPostToDB = await savePostToDb({
+        channel: "linkedin",
+        pageId,
+        text: postText,
+        type: "post",
+        isApproved,
+        status: status,
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType,
+      });
+
+      const postId = addPostToDB?.dataValues.id;
+
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
+        await setKeyWithExpiry(
+          `linkedinText:${ pageId }:${ postId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+
+      // Post the text to the linkedin page's feed
+      if (!draft && !shouldSchedule && isApproved) {
+        return postTextToPageFeed(pageToken, pageId, postText)
+          .then(async (resp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { resp } });
+          })
+          .catch(async (err) => {
+            console.log(err.message);
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
+      }
+    }
+
+    return res.status(200).json({ success: true });
+
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -43,25 +143,120 @@ exports.textPostToPageFeed = async (req, res) => {
  */
 exports.singleImagePostToPageFeed = async (req, res) => {
   try {
+
     // Extract the required parameters from the request body
-    const { accessToken, pageId, imageUrl, postText = "" } = req.body;
+    const {
+      pageId,
+      imageUrl,
+      caption,
+      draft,
+      status,
+      shouldSchedule,
+      scheduleTimeSecs,
+      scheduleDate,
+      postId: editId,
+      isApproved,
+      postType,
+    } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
-    if (!accessToken || !pageId || !imageUrl) {
+    if (!pageId || !imageUrl) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    // Post the postText to the page's feed
-    const response = await singleImagePostToLinkedinPageFeed(
-      accessToken,
-      pageId,
-      imageUrl,
-      postText
-    );
+    const getPageById = await getOnePage(pageId);
 
-    // Return the response data from the LinkedIn API
-    res.status(200).json(response);
-  } catch (error) {
+    const { pageToken } = getPageById;
+
+    if (!pageToken) {
+      return res.status(400).json({ error: "Cannot find page" });
+    }
+
+    if (editId) {
+      const update = await updatePostToDb(editId, {
+        channel: "linkedin",
+        pageId,
+        text: caption,
+        type: "post",
+        isApproved: isApproved,
+        status: status,
+        imageUrls: JSON.stringify([imageUrl]),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
+
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        !draft &&
+        update.dataValues.isApproved
+      ) {
+
+        await delKey(`linkedinTextWithImage:${ pageId }:${ editId }:${ pageToken }`);
+
+        await setKeyWithExpiry(
+          `linkedinTextWithImage:${ pageId }:${ editId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+    }
+    else {
+      //save post to DB
+      const addPostToDB = await savePostToDb({
+        channel: "linkedin",
+        pageId,
+        text: caption,
+        type: "post",
+        isApproved,
+        status: status,
+        imageUrls: JSON.stringify([imageUrl]),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType,
+      });
+
+      const postId = addPostToDB?.dataValues.id;
+
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
+        await setKeyWithExpiry(
+          `linkedinTextWithImage:${ pageId }:${ postId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+
+      if (!draft && !shouldSchedule && isApproved) {
+        // Post the single image to the linkedin page's feed
+        return singleImagePostToLinkedinPageFeed(
+          pageToken,
+          pageId,
+          imageUrl,
+          caption
+        )
+          .then(async (resp) => {
+            const status = await updatePostStatus(postId, "sent");
+
+            return res.status(200).json({ success: true, data: { resp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
+      }
+    }
+
+    return res.status(200).json({ success: true });
+
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -76,30 +271,120 @@ exports.singleImagePostToPageFeed = async (req, res) => {
  */
 exports.multipleImagePostToPageFeed = async (req, res) => {
   try {
+
+
     // Extract the required parameters from the request body
     const {
-      pageId, // The ID of the LinkedIn page.
-      imageUrls, // The URLs of the images to be posted.
-      postText = "", // The text to accompany the images.
-      accessToken, // The access token for the user's LinkedIn page.
+      pageId,
+      imageUrls,
+      status,
+      draft,
+      postText,
+      shouldSchedule,
+      scheduleTimeSecs,
+      scheduleDate,
+      postId: editId,
+      isApproved,
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
-    if (!accessToken || !pageId || !imageUrls) {
+    if (!pageId || !imageUrls) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    // Post the postText to the page's feed
-    const response = await multipleImagePostToLinkedinPageFeed(
-      accessToken,
-      pageId,
-      imageUrls,
-      postText
-    );
+    const getPageById = await getOnePage(pageId);
 
-    // Return the response data from the LinkedIn API
-    res.status(200).json(response);
-  } catch (error) {
+    const { pageToken } = getPageById;
+
+    if (!pageToken) {
+      return res.status(400).json({ error: "Cannot find page" });
+    }
+
+    if (editId) {
+      const update = await updatePostToDb(editId, {
+        channel: "linkedin",
+        pageId,
+        text: postText,
+        type: "post",
+        isApproved,
+        status: status,
+        imageUrls: JSON.stringify(imageUrls),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
+
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        !draft &&
+        update.dataValues.isApproved
+      ) {
+        await delKey(`linkedinTextWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`);
+
+        await setKeyWithExpiry(
+          `linkedinTextWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+    }
+    else {
+
+      // save post to DB
+      const addPostToDB = await savePostToDb({
+        channel: "linkedin",
+        pageId,
+        text: postText,
+        type: "post",
+        isApproved,
+        status: status,
+        imageUrls: JSON.stringify(imageUrls),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType,
+      });
+
+      const postId = addPostToDB?.dataValues.id;
+
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
+        await setKeyWithExpiry(
+          `linkedinTextWithMultipleImage:${ pageId }:${ postId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+
+      if (!draft && !shouldSchedule && isApproved) {
+        return multipleImagePostToLinkedinPageFeed(
+          pageToken,
+          pageId,
+          imageUrls,
+          postText
+        )
+          .then(async (resp) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { resp } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(
+              postId,
+              "not sent",
+              err.message
+            );
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
+      }
+    }
+
+    res.status(200).json({ success: true });
+
+
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -128,38 +413,124 @@ const downloadVideo = async (videoUrl) => {
  */
 exports.videoPostToPageFeed = async (req, res) => {
   try {
+
+
     // Extract the required parameters from the request body
     const {
-      accessToken, // The access token for the user's LinkedIn page.
-      pageId, // The ID of the page to which the video will be posted.
-      videoUrl, // The URL of the video to be posted.
-      postText = "", // The text to accompany the video.
+      pageId,
+      videoUrl,
+      postText,
+      draft,
+      status,
+      shouldSchedule,
+      scheduleTimeSecs,
+      scheduleDate,
+      postId: editId,
+      isApproved,
+      postType,
     } = req.body;
 
     // If any of the required parameters are missing, return a bad request response
-    if (!accessToken || !pageId || !videoUrl) {
+    if (!pageId || !videoUrl) {
       return res.status(400).json({ error: "Missing required parameters" });
     }
 
-    // Download the video
-    const videoBuffer = await downloadVideo(videoUrl);
+    const getPageById = await getOnePage(pageId);
 
-    // If the video download fails, return a bad request response
-    if (!videoBuffer) {
-      return res.status(400).json({ error: "Failed to download video" });
+    const { pageToken } = getPageById;
+
+    if (!pageToken) {
+      return res.status(400).json({ error: "Cannot find page" });
     }
 
-    // Post the postText to the page's feed
-    const response = await videoPostToLinkedinPageFeed(
-      accessToken,
-      pageId,
-      videoBuffer,
-      postText
-    );
+    if (editId) {
+      const update = await updatePostToDb(editId, {
+        channel: "linkedin",
+        pageId,
+        text: postText,
+        type: "post",
+        isApproved,
+        status: status,
+        videoUrls: JSON.stringify([videoUrl]),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postType,
+      });
 
-    // Return the response data from the LinkedIn API
-    res.status(200).json(response);
-  } catch (error) {
+      if (
+        shouldSchedule &&
+        scheduleTimeSecs &&
+        update.dataValues.isApproved &&
+        !draft
+      ) {
+        await delKey(`linkedinVideoPage:${ pageId }:${ editId }:${ pageToken }`);
+
+        await setKeyWithExpiry(
+          `linkedinVideoPage:${ pageId }:${ editId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+    }
+    else {
+      //save post to DB
+      const addPostToDB = await savePostToDb({
+        channel: "linkedin",
+        pageId,
+        text: postText,
+        type: "post",
+        isApproved,
+        status: status,
+        videoUrls: JSON.stringify([videoUrl]),
+        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        createdBy: req?.user?.userId,
+        createdByEmail: req?.user?.email,
+        postType,
+      });
+
+      const postId = addPostToDB?.dataValues.id;
+
+      if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
+        await setKeyWithExpiry(
+          `linkedinVideoPage:${ pageId }:${ postId }:${ pageToken }`,
+          "some value",
+          scheduleTimeSecs
+        );
+      }
+
+      if (!draft && !shouldSchedule && isApproved) {
+
+        // Download the video
+        const videoBuffer = await downloadVideo(videoUrl);
+
+        // If the video download fails, return a bad request response
+        if (!videoBuffer) {
+          return res.status(400).json({ error: "Failed to download video" });
+        }
+
+        // Post the postText to the page's feed
+        return videoPostToLinkedinPageFeed(
+          pageToken,
+          pageId,
+          videoBuffer,
+          postText
+        )
+          .then(async (res) => {
+            const status = await updatePostStatus(postId, "sent");
+            return res.status(200).json({ success: true, data: { res } });
+          })
+          .catch(async (err) => {
+            const status = await updatePostStatus(postId, "not sent", err.message);
+            return res
+              .status(500)
+              .json({ success: false, error: { message: err.message } });
+          });
+      }
+    }
+
+    res.status(200).json({ success: true });
+
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }

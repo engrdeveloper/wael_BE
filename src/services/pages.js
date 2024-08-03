@@ -5,7 +5,7 @@ const db = require("../models");
  * @param {string} pageId - The ID of the FB page.
  * @param {string} pageToken - The token to access page.
  * @param {string} name - The name of page.
- * @param {string} userToken - The user token to access all pages.
+ * @param {null} userToken - The user token to access all pages.
  * @param {string} userId - The user token to access all pages.
  * @param {string} channel - The channel of pages.
  * @returns {Promise<Object>} - A promise that resolves to the created page object.

@@ -45,7 +45,7 @@ router.get(
           // const longToken = await getLongLivedPageToken(page?.access_token, page?.id)
 
           if (page?.instagram_business_account?.id) {
-            const channel = await addPage(page?.instagram_business_account?.id, page?.access_token, page?.name, req.user.accessToken, req?.user?.userSqlId, 'instagram')
+            const channel = await addPage(page?.instagram_business_account?.id, page?.access_token, page?.instagram_business_account?.details.name || page?.name, req.user.accessToken, req?.user?.userSqlId, 'instagram')
             if (Array.isArray(channel)) {
               if (channel[1] === true) {
                 const channelUser = await addUserPage(req?.user?.userSqlId, 'owner', channel[0]?.dataValues.id)
@@ -100,7 +100,7 @@ router.get(
   async (req, res) => {
     const profile = req.user;
 
-    const channel = await addPage(profile?.id, `${profile?.access_token}@${profile?.tokenSecret}`, profile.displayName, req.user.accessToken, req?.user?.userSqlId, 'twitter')
+    const channel = await addPage(profile?.id, `${ profile?.access_token }@${ profile?.tokenSecret }`, profile.displayName, req.user.accessToken, req?.user?.userSqlId, 'twitter')
 
     if (Array.isArray(channel)) {
       if (channel[1] === true) {
@@ -131,13 +131,14 @@ router.get("/linkedin", (req, res) => {
   const scope =
     "r_organization_followers r_organization_social rw_organization_admin r_organization_social_feed w_member_social w_organization_social r_basicprofile w_organization_social_feed w_member_social_feed r_1st_connections_size";
 
-  // Generate a random state for the LinkedIn API
-  const state = crypto.randomBytes(16).toString("hex");
+  const user = req.query.myVar
+
+  console.log(user)
 
   // Construct the authorization URL for LinkedIn
   const authorizationUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${ clientId }&redirect_uri=${ encodeURIComponent(
     redirectUri
-  ) }&state=${ state }&scope=${ encodeURIComponent(scope) }`;
+  ) }&state=${ user }&scope=${ encodeURIComponent(scope) }`;
 
   // Redirect the user to the LinkedIn authorization URL
   res.redirect(authorizationUrl);
@@ -146,7 +147,9 @@ router.get("/linkedin", (req, res) => {
 // Handle the callback from LinkedIn
 router.get("/linkedin/callback", async (req, res) => {
   // Get the authorization code from the query parameters
-  const { code } = req.query;
+  const { code, state } = req.query;
+
+  console.log('hello world', req.query, req.params)
 
   // Get the LinkedIn client ID and client secret from the environment variables
   const clientId = process.env.LINKEDIN_CLIENT_ID;
@@ -182,7 +185,7 @@ router.get("/linkedin/callback", async (req, res) => {
       },
       timeout: 30000,
     });
-
+    console.log(access_token)
     // Get the user's pages from the LinkedIn API
     const pagesResponse = await axios.get(
       "https://api.linkedin.com/v2/organizationalEntityAcls",
@@ -198,13 +201,54 @@ router.get("/linkedin/callback", async (req, res) => {
       }
     );
 
+
+    for (let i = 0; i < pagesResponse?.data?.elements.length; i++) {
+
+      const page = pagesResponse.data.elements[i]
+
+      console.log(page?.organizationalTarget?.split(':')?.[3], 'lllllllllllllllll')
+
+      if (page?.organizationalTarget?.split(':')?.[3]) {
+
+        const name = await axios.get(`https://api.linkedin.com/rest/organizations/${ page?.organizationalTarget?.split(':')?.[3] }`,
+          {
+            headers: {
+              Authorization: `Bearer ${ access_token }`,
+              "Linkedin-Version": "202406",
+              "X-Restli-Protocol-Version": "2.0.0",
+            },
+          }
+        )
+
+        console.log(name?.data?.localizedName, 'i am gere ali awan')
+
+        const channel = await addPage(page?.organizationalTarget?.split(':')?.[3], access_token, name?.data?.localizedName, null, state, 'linkedin')
+
+        console.log(channel, 'kekekekekekeke')
+
+        if (Array.isArray(channel)) {
+          if (channel[1] === true) {
+            console.log('i am hfhfhf')
+            const channelUser =
+              await addUserPage(state, 'owner', channel[0]?.dataValues.id)
+          }
+        }
+      }
+    }
+
+    console.log('comp;eyted')
+
+
     // Log the user information and page data
-    console.log({ user: userInfoResponse.data, pageData: pagesResponse.data });
+    // console.log({ user: userInfoResponse.data, pageData: pagesResponse.data });
 
     // TODO: Handle the user data here based on channel logic
 
     // Redirect the user to the main page
-    res.redirect(appUrlRdirect);
+
+    // Redirect the user to the main page
+    // res.redirect(appUrlRdirect);
+    res.send({ user: userInfoResponse.data, pageData: pagesResponse.data });
   }
   catch (error) {
     // Log the error and send an error response

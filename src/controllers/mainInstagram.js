@@ -175,7 +175,7 @@ exports.postCarouselToInstagram = async (req, res) => {
 
     // Post the carousel of images to the Instagram account
 
-    imageUrls = imageUrls.map(url => {
+    const images = imageUrls.map(url => {
 
       if (url.includes('.mp4')) {
         return { type: 'video', imageUrl: url }
@@ -241,7 +241,7 @@ exports.postCarouselToInstagram = async (req, res) => {
         return postCarouselToInstagramAccount({
           igUserId: pageId,
           accessToken: pageToken,
-          mediaItems: imageUrls,
+          mediaItems: images,
           caption: postText,
         }).then(async resp => {
           const status = await updatePostStatus(postId, 'sent')

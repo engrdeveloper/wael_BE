@@ -24,7 +24,7 @@ const moment = require("moment");
  */
 exports.getLongLivedPageToken = async (longLivedUserToken, pageId) => {
   // Construct the URL for the Graph API request.
-  const url = `https://graph.facebook.com/${pageId}?fields=access_token&access_token=${longLivedUserToken}`;
+  const url = `https://graph.facebook.com/${ pageId }?fields=access_token&access_token=${ longLivedUserToken }`;
 
   // Send a GET request to the Graph API and retrieve the page access token.
   const response = await axios.get(url);
@@ -67,7 +67,7 @@ exports.handleUserFacebookLoginSuccess = async (userData) => {
       if (page?.instagram_business_account) {
         // Fetch Instagram account details using the Instagram Graph API
         const instagramResponse = await axios.get(
-          `https://graph.facebook.com/${page.instagram_business_account.id}`,
+          `https://graph.facebook.com/${ page.instagram_business_account.id }`,
           {
             params: {
               access_token: accessToken,
@@ -89,7 +89,8 @@ exports.handleUserFacebookLoginSuccess = async (userData) => {
 
     // Return the array of page data with Instagram details.
     return pagesWithInstagramDetails;
-  } catch (err) {
+  }
+  catch (err) {
     // Log any errors that occur while handling the Facebook login.
     console.log("Error while handling facebook login", err);
   }
@@ -151,15 +152,16 @@ exports.textPostToPageFeed = async (req, res) => {
         update.dataValues.isApproved &&
         !draft
       ) {
-        await delKey(`text:${pageId}:${editId}:${pageToken}`);
+        await delKey(`text:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `text:${pageId}:${editId}:${pageToken}`,
+          `text:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -180,7 +182,7 @@ exports.textPostToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(
-          `text:${pageId}:${postId}:${pageToken}`,
+          `text:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -212,7 +214,8 @@ exports.textPostToPageFeed = async (req, res) => {
     }
 
     return res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -276,15 +279,16 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         !draft &&
         update.dataValues.isApproved
       ) {
-        await delKey(`textWithImage:${pageId}:${editId}:${pageToken}`);
+        await delKey(`textWithImage:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `textWithImage:${pageId}:${editId}:${pageToken}`,
+          `textWithImage:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -306,7 +310,7 @@ exports.singleImagePostToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(
-          `textWithImage:${pageId}:${postId}:${pageToken}`,
+          `textWithImage:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -339,7 +343,8 @@ exports.singleImagePostToPageFeed = async (req, res) => {
     }
 
     return res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -403,15 +408,16 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         !draft &&
         update.dataValues.isApproved
       ) {
-        await delKey(`textWithMultipleImage:${pageId}:${editId}:${pageToken}`);
+        await delKey(`textWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `textWithMultipleImage:${pageId}:${editId}:${pageToken}`,
+          `textWithMultipleImage:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -433,7 +439,7 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(
-          `textWithMultipleImage:${pageId}:${postId}:${pageToken}`,
+          `textWithMultipleImage:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -464,7 +470,8 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
     }
 
     res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -528,15 +535,16 @@ exports.videoPostToPageFeed = async (req, res) => {
         update.dataValues.isApproved &&
         !draft
       ) {
-        await delKey(`videoFBPage:${pageId}:${editId}:${pageToken}`);
+        await delKey(`videoFBPage:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `videoFBPage:${pageId}:${editId}:${pageToken}`,
+          `videoFBPage:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -558,7 +566,7 @@ exports.videoPostToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(
-          `videoFBPage:${pageId}:${postId}:${pageToken}`,
+          `videoFBPage:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -590,7 +598,8 @@ exports.videoPostToPageFeed = async (req, res) => {
     }
 
     res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -654,15 +663,16 @@ exports.reelPostToPageFeed = async (req, res) => {
         update.dataValues.isApproved &&
         !draft
       ) {
-        await delKey(`reelToPage:${pageId}:${editId}:${pageToken}`);
+        await delKey(`reelToPage:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `reelToPage:${pageId}:${editId}:${pageToken}`,
+          `reelToPage:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -684,7 +694,7 @@ exports.reelPostToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && isApproved && !draft) {
         await setKeyWithExpiry(
-          `reelToPage:${pageId}:${postId}:${pageToken}`,
+          `reelToPage:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -717,7 +727,8 @@ exports.reelPostToPageFeed = async (req, res) => {
     }
 
     res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -780,15 +791,16 @@ exports.storyVideoToPageFeed = async (req, res) => {
         update.dataValues.isApproved &&
         !draft
       ) {
-        await delKey(`storyVideoToPage:${pageId}:${editId}:${pageToken}`);
+        await delKey(`storyVideoToPage:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `storyVideoToPage:${pageId}:${editId}:${pageToken}`,
+          `storyVideoToPage:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -810,7 +822,7 @@ exports.storyVideoToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && !draft && isApproved) {
         await setKeyWithExpiry(
-          `storyVideoToPage:${pageId}:${postId}:${pageToken}`,
+          `storyVideoToPage:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -843,7 +855,8 @@ exports.storyVideoToPageFeed = async (req, res) => {
     }
 
     return res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
@@ -907,15 +920,16 @@ exports.storyImageToPageFeed = async (req, res) => {
         update.dataValues.isApproved &&
         !draft
       ) {
-        await delKey(`storyImageToPage:${pageId}:${editId}:${pageToken}`);
+        await delKey(`storyImageToPage:${ pageId }:${ editId }:${ pageToken }`);
 
         await setKeyWithExpiry(
-          `storyImageToPage:${pageId}:${editId}:${pageToken}`,
+          `storyImageToPage:${ pageId }:${ editId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
       }
-    } else {
+    }
+    else {
       //save post to DB
       const addPostToDB = await savePostToDb({
         channel: "facebook",
@@ -937,7 +951,7 @@ exports.storyImageToPageFeed = async (req, res) => {
 
       if (shouldSchedule && scheduleTimeSecs && isApproved && !draft) {
         await setKeyWithExpiry(
-          `storyImageToPage:${pageId}:${postId}:${pageToken}`,
+          `storyImageToPage:${ pageId }:${ postId }:${ pageToken }`,
           "some value",
           scheduleTimeSecs
         );
@@ -971,7 +985,8 @@ exports.storyImageToPageFeed = async (req, res) => {
     }
 
     return res.status(200).json({ success: true });
-  } catch (error) {
+  }
+  catch (error) {
     // If an error occurs, return a server error response
     res.status(500).json({ error: error.message });
   }
