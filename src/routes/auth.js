@@ -247,8 +247,8 @@ router.get("/linkedin/callback", async (req, res) => {
     // Redirect the user to the main page
 
     // Redirect the user to the main page
-    // res.redirect(appUrlRdirect);
-    res.send({ user: userInfoResponse.data, pageData: pagesResponse.data });
+    res.redirect(appUrlRdirect);
+    // res.send({ user: userInfoResponse.data, pageData: pagesResponse.data });
   }
   catch (error) {
     // Log the error and send an error response

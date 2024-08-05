@@ -20,7 +20,7 @@ exports.addPage = async (pageId, pageToken, name, userToken, userId, channel) =>
  * @returns {Promise<Object|null>} - A promise that resolves to the page object or null if not found.
  */
 exports.getOnePage = async (pageId) => {
-  return db.Pages.findOne({ pageId });
+  return db.Pages.findOne({ where: { pageId: pageId } });
 };
 
 /**

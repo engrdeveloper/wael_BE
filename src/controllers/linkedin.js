@@ -45,6 +45,7 @@ exports.textPostToPageFeed = async (req, res) => {
 
     const getPageById = await getOnePage(pageId);
 
+
     const { pageToken } = getPageById;
 
     if (!pageToken) {
@@ -514,9 +515,9 @@ exports.videoPostToPageFeed = async (req, res) => {
           videoBuffer,
           postText
         )
-          .then(async (res) => {
+          .then(async (resp) => {
             const status = await updatePostStatus(postId, "sent");
-            return res.status(200).json({ success: true, data: { res } });
+            return res.status(200).json({ success: true, data: { resp } });
           })
           .catch(async (err) => {
             const status = await updatePostStatus(postId, "not sent", err.message);
