@@ -149,8 +149,6 @@ router.get("/linkedin/callback", async (req, res) => {
   // Get the authorization code from the query parameters
   const { code, state } = req.query;
 
-  console.log('hello world', req.query, req.params)
-
   // Get the LinkedIn client ID and client secret from the environment variables
   const clientId = process.env.LINKEDIN_CLIENT_ID;
   const clientSecret = process.env.LINKEDIN_CLIENT_SECRET;
@@ -206,8 +204,6 @@ router.get("/linkedin/callback", async (req, res) => {
 
       const page = pagesResponse.data.elements[i]
 
-      console.log(page?.organizationalTarget?.split(':')?.[3], 'lllllllllllllllll')
-
       if (page?.organizationalTarget?.split(':')?.[3]) {
 
         const name = await axios.get(`https://api.linkedin.com/rest/organizations/${ page?.organizationalTarget?.split(':')?.[3] }`,
@@ -220,24 +216,16 @@ router.get("/linkedin/callback", async (req, res) => {
           }
         )
 
-        console.log(name?.data?.localizedName, 'i am gere ali awan')
-
         const channel = await addPage(page?.organizationalTarget?.split(':')?.[3], access_token, name?.data?.localizedName, null, state, 'linkedin')
-
-        console.log(channel, 'kekekekekekeke')
 
         if (Array.isArray(channel)) {
           if (channel[1] === true) {
-            console.log('i am hfhfhf')
             const channelUser =
               await addUserPage(state, 'owner', channel[0]?.dataValues.id)
           }
         }
       }
     }
-
-    console.log('comp;eyted')
-
 
     // Log the user information and page data
     // console.log({ user: userInfoResponse.data, pageData: pagesResponse.data });

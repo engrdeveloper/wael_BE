@@ -74,6 +74,10 @@ app.use("/apis/twitter", require("./src/routes/twitter"));
 // Routes for handling linkedin posting
 app.use("/apis/linkedin", require("./src/routes/linkedin"));
 
+// Routes for subscription
+app.use("/apis/subscription", require("./src/routes/subscriptions"));
+
+
 // Start the server and listen on the specified port
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

@@ -201,3 +201,19 @@ exports.deletePostById = async (postId) => {
   }
   return post.destroy();
 }
+
+exports.getTwoWeekPostsCountByUserId = async (userId) => {
+
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+
+  return db.Posts.count({
+    where: {
+      createdBy: userId,
+      createdAt: {
+        [Op.gte]: twoWeeksAgo,
+      },
+    },
+  });
+}
+

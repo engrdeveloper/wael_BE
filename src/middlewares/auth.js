@@ -1,5 +1,6 @@
 const Jwt = require("jsonwebtoken");
-
+const { getOneSubscription } = require('../services/subscriptions')
+const { getTwoWeekPostsCountByUserId } = require('../services/posts')
 /**
  * Middleware function to authenticate the user.
  * Checks if the user is authenticated by verifying the token in the request headers.
@@ -23,10 +24,41 @@ exports.auth = async (req, res, next) => {
     }
 
     next();
-  } else {
+  }
+  else {
     // Return a 401 Unauthorized response if the token is not provided
     return res
       .status(401)
       .json({ success: false, error: { message: "Unauthorized" } });
   }
+};
+
+
+exports.checkSubscription = async (req, res, next) => {
+
+  try {
+
+    const subscription = await getOneSubscription(req.user.userId)
+
+    if (!subscription?.dataValues?.plan) {
+      return res.status(500).json({ success: false, error: { message: 'You have no plan selected' } })
+    }
+    else if (subscription?.dataValues?.plan === 'basic') {
+
+      const count = await getTwoWeekPostsCountByUserId(req.user.userId)
+
+      if (count > 5) {
+        return res.status(500).json({ success: false, error: { message: 'You have reached the limit' } })
+      }
+
+      console.log(count, '######')
+    }
+    next()
+  }
+  catch (e) {
+    console.log(e)
+    return res.status(500).json({ success: false, error: { message: 'Something went wrong', reason: e.message } })
+
+  }
+
 };

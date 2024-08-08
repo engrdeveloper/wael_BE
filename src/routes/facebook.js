@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { auth } = require('../middlewares/auth')
+const { auth, checkSubscription } = require('../middlewares/auth')
 const facebookController = require("../controllers/facebook");
 const multer = require("multer");
 const path = require('path');
@@ -40,12 +40,13 @@ function checkFileType(file, cb) {
 }
 
 // POST /page/post-text 36366- send text post at the page
-router.post("/page/post-text", auth, facebookController.textPostToPageFeed);
+router.post("/page/post-text", auth, checkSubscription, facebookController.textPostToPageFeed);
 
 // POST /page/post-single-image - send single image post at the page
 router.post(
   "/page/post-single-image",
   auth,
+  checkSubscription,
   facebookController.singleImagePostToPageFeed
 );
 
@@ -53,20 +54,21 @@ router.post(
 router.post(
   "/page/post-multiple-images",
   auth,
+  checkSubscription,
   facebookController.multipleImagePostToPageFeed
 );
 
 // POST /page/post-video - send video post at the page
-router.post("/page/post-video", auth, facebookController.videoPostToPageFeed);
+router.post("/page/post-video", auth, checkSubscription, facebookController.videoPostToPageFeed);
 
 // POST /page/post-reel - send reel post at the page
-router.post("/page/post-reel", auth, facebookController.reelPostToPageFeed);
+router.post("/page/post-reel", auth, checkSubscription, facebookController.reelPostToPageFeed);
 
 // POST /page/post-story - send story post at the page
-router.post("/page/post-story-video", auth, facebookController.storyVideoToPageFeed);
+router.post("/page/post-story-video", auth, checkSubscription, facebookController.storyVideoToPageFeed);
 
 // POST /page/post-story-image - send story image post at the page
-router.post("/page/post-story-image", auth, facebookController.storyImageToPageFeed);
+router.post("/page/post-story-image", auth, checkSubscription, facebookController.storyImageToPageFeed);
 
 // Single file upload route
 router.post('/upload-single', upload.single('file'), (req, res) => {

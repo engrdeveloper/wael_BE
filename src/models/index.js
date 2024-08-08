@@ -27,6 +27,9 @@ db.Pages = require("./Page")(sequelize, DataTypes);
 // Import the Posts model and pass the Sequelize instance and DataTypes to it.
 db.Posts = require("./Posts")(sequelize, DataTypes);
 
+db.Subscriptions = require("./Subscriptions")(sequelize, DataTypes);
+
+
 // Add the Sequelize instance and Sequelize constructor to the db object.
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
@@ -39,7 +42,7 @@ db.Sequelize = Sequelize;
 //
 // });
 
-// db.Pages.sync({alter: true});
+// db.Subscriptions.sync({force: true});
 
 db.User.hasMany(db.Pages, {
   as: "mainUserPages",

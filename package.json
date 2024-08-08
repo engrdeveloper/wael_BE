@@ -35,6 +35,7 @@
     "passport-twitter": "^1.0.4",
     "sequelize": "^6.37.3",
     "session": "^0.1.0",
+    "stripe": "^16.6.0",
     "twitter-api-v2": "^1.17.2",
     "uuid": "^10.0.0"
   },
