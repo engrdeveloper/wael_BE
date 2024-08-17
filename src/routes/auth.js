@@ -83,6 +83,8 @@ router.get("/twitter", ((req, res, next) => {
 
   const user = req.query.myVar
 
+  req.session.state = user
+
   console.log(user)
 
   passport.authenticate("twitter", {

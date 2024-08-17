@@ -73,12 +73,12 @@ passport.use(
     },
     function (req, token, tokenSecret, profile, done) {
 
-      console.log('i am here', req.state)
+      console.log('i am here', req.session)
 
       profile.token = token;
       profile.tokenSecret = tokenSecret;
-      profile.userSqlId = req.query.state
-      profile.userSqlEmail = req.query.state
+      profile.userSqlId = req.session.state
+      profile.userSqlEmail = req.session.state
       return done(null, profile);
     }
   )
