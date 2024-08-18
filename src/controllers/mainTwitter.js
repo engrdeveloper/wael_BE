@@ -542,10 +542,10 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
 
           // Process the image one by one
           const mediaIds = await Promise.all(
-            imageUrl.map(async (media) => {
+            imageUrl.map(async (media, ind) => {
               if (media?.type === "image") {
                 // Set the file path for the downloaded image
-                const filePath = path.resolve(assetsPath, "twitter_image.jpg");
+                const filePath = path.resolve(assetsPath, `twitter_image${ ind }.jpg`);
                 // Download the image from the provided URL
                 await downloadMedia(media.imageUrl, filePath);
                 // Upload the image to Twitter and get the media ID
