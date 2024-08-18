@@ -11,9 +11,9 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true
+      autoIncrement: true,
+      field: 'id' // or the actual column name in the database
     },
-
     /**
      * The ID of the user.
      * @type {number}

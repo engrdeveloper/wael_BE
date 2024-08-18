@@ -79,7 +79,7 @@ app.use("/apis/subscription", require("./src/routes/subscriptions"));
 
 
 // Start the server and listen on the specified port
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/apis/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.listen(port, (err) => {
   // Log an error if there was an error in server setup

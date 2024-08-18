@@ -336,7 +336,8 @@ exports.postImageTweetToTwitter = async (req, res) => {
         isApproved: isApproved,
         status: status,
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
-        postType
+        postType,
+        imageUrls: JSON.stringify([imageUrl]),
       })
 
       if (shouldSchedule && scheduleTimeSecs && !draft && update.dataValues.isApproved) {
@@ -361,7 +362,8 @@ exports.postImageTweetToTwitter = async (req, res) => {
         postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
-        postType
+        postType,
+        imageUrls: JSON.stringify([imageUrl]),
       })
 
       const postId = addPostToDB?.dataValues.id
@@ -458,10 +460,6 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
     // If any of the required parameters are missing, return a bad request response
     if (!postText || !pageId || !imageUrls || imageUrls.length === 0) {
       return res.status(400).json({ error: "Missing required parameters" });
-    }
-
-    if (imageUrls.length > 4) {
-      return res.status(400).json({ error: "Maximum 4 images allowed" });
     }
 
     // Post the carousel of images to the Instagram a

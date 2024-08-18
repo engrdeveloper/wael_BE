@@ -7,7 +7,11 @@
 module.exports = (sequelize, DataTypes) => {
   // Define the Page model with the userId, role, mainUserId, and page properties.
   const Page = sequelize.define("Page", {
-
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
     /**
      * The ID of the page from Social Channel.
      * will be used as insta ID as well

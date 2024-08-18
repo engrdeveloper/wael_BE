@@ -102,7 +102,7 @@ router.get(
   async (req, res) => {
     const profile = req.user;
 
-    const channel = await addPage(profile?.id, `${ profile?.access_token }@${ profile?.tokenSecret }`, profile.displayName, req.user.accessToken, req?.user?.userSqlId, 'twitter')
+    const channel = await addPage(profile?.id, `${ profile?.token }@${ profile?.tokenSecret }`, profile.displayName, req.user.accessToken, req?.user?.userSqlId, 'twitter')
 
     if (Array.isArray(channel)) {
       if (channel[1] === true) {

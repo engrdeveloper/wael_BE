@@ -78,7 +78,7 @@ router.post('/upload-single', upload.single('file'), (req, res) => {
   else {
     res.status(200).json({
       message: 'File uploaded successfully!',
-      file: `${ apiUrl }/uploads/${ req.file.filename }`
+      file: `${ apiUrl }/apis/uploads/${ req.file.filename }`
     });
   }
 });
