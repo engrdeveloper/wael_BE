@@ -60,7 +60,7 @@ exports.textPostToPageFeed = async (req, res) => {
         type: "post",
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         postType,
       });
 
@@ -89,7 +89,7 @@ exports.textPostToPageFeed = async (req, res) => {
         type: "post",
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType,
@@ -182,7 +182,7 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         isApproved: isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         postType,
       });
 
@@ -212,7 +212,7 @@ exports.singleImagePostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType,
@@ -311,7 +311,7 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         postType,
       });
 
@@ -341,7 +341,7 @@ exports.multipleImagePostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType,
@@ -453,7 +453,7 @@ exports.videoPostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         postType,
       });
 
@@ -482,7 +482,7 @@ exports.videoPostToPageFeed = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType,

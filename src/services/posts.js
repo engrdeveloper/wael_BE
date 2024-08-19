@@ -48,6 +48,9 @@ exports.getPostsByPageId = async (pageId, status, page = 1) => {
 };
 
 function formatDate(date) {
+
+  date = new Date(date)
+
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
   const day = String(date.getDate()).padStart(2, '0');
@@ -55,15 +58,19 @@ function formatDate(date) {
 }
 
 function getTodayAnd7thDate() {
+
   const today = new Date();
 
-  // Calculate the date 7 days from today
+// Calculate the date 7 days from today
   const seventhDay = new Date(today);
   seventhDay.setDate(today.getDate() + 7);
 
+// Convert to ISO format
+  const isoSeventhDay = seventhDay.toISOString();
+
   return {
-    today: formatDate(today),
-    seventhDay: formatDate(seventhDay)
+    today: formatDate(today.toISOString()),
+    seventhDay: formatDate(isoSeventhDay)
   };
 }
 
@@ -207,11 +214,14 @@ exports.getTwoWeekPostsCountByUserId = async (userId) => {
   const twoWeeksAgo = new Date();
   twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
+  const isoTwoWeeksAgo = twoWeeksAgo.toISOString();
+
+
   return db.Posts.count({
     where: {
       createdBy: userId,
       createdAt: {
-        [Op.gte]: twoWeeksAgo,
+        [Op.gte]: isoTwoWeeksAgo,
       },
     },
   });

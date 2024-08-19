@@ -167,7 +167,7 @@ exports.postTextTweetToTwitter = async (req, res) => {
         type: 'post',
         isApproved: isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -190,7 +190,7 @@ exports.postTextTweetToTwitter = async (req, res) => {
         type: 'post',
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
@@ -335,7 +335,7 @@ exports.postImageTweetToTwitter = async (req, res) => {
         type: 'post',
         isApproved: isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType,
         imageUrls: JSON.stringify([imageUrl]),
       })
@@ -359,7 +359,7 @@ exports.postImageTweetToTwitter = async (req, res) => {
         type: 'post',
         isApproved,
         status: status,
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType,
@@ -482,7 +482,7 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -504,7 +504,7 @@ exports.postCarouselTweetToTwitter = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
@@ -647,7 +647,7 @@ exports.postVideoTweetToTwitter = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -670,7 +670,7 @@ exports.postVideoTweetToTwitter = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType

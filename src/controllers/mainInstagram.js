@@ -66,7 +66,7 @@ exports.postImageToInstagram = async (req, res) => {
         isApproved: isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -90,7 +90,7 @@ exports.postImageToInstagram = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
@@ -202,7 +202,7 @@ exports.postCarouselToInstagram = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -224,7 +224,7 @@ exports.postCarouselToInstagram = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify(imageUrls),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
@@ -314,7 +314,7 @@ exports.postVideoToInstagram = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -337,7 +337,7 @@ exports.postVideoToInstagram = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
@@ -427,7 +427,7 @@ exports.postStoryImageToInstagram = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -450,7 +450,7 @@ exports.postStoryImageToInstagram = async (req, res) => {
         isApproved,
         status: status,
         imageUrls: JSON.stringify([imageUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
@@ -539,7 +539,7 @@ exports.postStoryVideoToInstagram = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         postType
       })
 
@@ -561,7 +561,7 @@ exports.postStoryVideoToInstagram = async (req, res) => {
         isApproved,
         status: status,
         videoUrls: JSON.stringify([videoUrl]),
-        postedDate: shouldSchedule ? scheduleDate : moment(new Date()).format('YYYY-MM-DD HH:mm:ss'),
+        postedDate: scheduleDate,
         createdBy: req?.user?.userId,
         createdByEmail: req?.user?.email,
         postType
