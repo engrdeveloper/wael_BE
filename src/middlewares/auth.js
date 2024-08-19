@@ -47,7 +47,7 @@ exports.checkSubscription = async (req, res, next) => {
 
       const count = await getTwoWeekPostsCountByUserId(req.user.userId)
 
-      if (count > 5) {
+      if (count >= 5) {
         return res.status(500).json({ success: false, error: { message: 'You have reached the limit' } })
       }
 

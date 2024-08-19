@@ -99,6 +99,16 @@ module.exports = (sequelize, DataTypes) => {
     postType: {
       type: DataTypes.STRING,
       required: true
+    },
+    createdAt: {
+      type: 'TIMESTAMP',
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+      allowNull: false
+    },
+    updatedAt: {
+      type: 'TIMESTAMP',
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+      allowNull: false
     }
 
   });

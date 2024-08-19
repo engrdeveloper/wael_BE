@@ -493,10 +493,10 @@ redisEvents.on('pmessage', async (pattern, channel, message) => {
 
         // Process the image one by one
         const mediaIds = await Promise.all(
-          imageUrl.map(async (media) => {
+          imageUrl.map(async (media, index) => {
             if (media?.type === "image") {
               // Set the file path for the downloaded image
-              const filePath = path.resolve(assetsPath, "twitter_image.jpg");
+              const filePath = path.resolve(assetsPath, `twitter_image${ index }.jpg`);
               // Download the image from the provided URL
               await downloadMedia(media.imageUrl, filePath);
               // Upload the image to Twitter and get the media ID

@@ -55,6 +55,16 @@ module.exports = (sequelize, DataTypes) => {
       required: true,
       primaryKey: false
     },
+    createdAt: {
+      type: 'TIMESTAMP',
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+      allowNull: false
+    },
+    updatedAt: {
+      type: 'TIMESTAMP',
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
+      allowNull: false
+    }
   });
 
   return UserPages;
